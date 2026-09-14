@@ -1,6 +1,6 @@
 # Netflared
 
-A **client-side** Fabric mod for Minecraft 26.2 that manages Cloudflare Access tunnels to your Minecraft servers — with multi-profile support, on-demand connection, and one-click join.
+A **client-side** Fabric mod for Minecraft 26.2 that manages Cloudflare Access tunnels to your Minecraft servers, with multi-profile support, on-demand connection, and one-click join.
 
 ---
 

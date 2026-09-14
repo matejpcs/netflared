@@ -46,7 +46,7 @@ A **client-side** Fabric mod for Minecraft 26.2 that manages Cloudflare Access t
 
 ### Setting up your first tunnel
 
-1. Open the **Multiplayer** screen. Click the **Netflared** button in the top-left (or press **F9**).
+1. Open the **Multiplayer** screen. Click the **Netflared** button in the top-left.
 2. In the settings screen, fill in:
    - **Name** — what you want the server to be called (e.g. `My Server`)
    - **Domain** — your Cloudflare tunnel hostname (e.g. `play.example.com`)

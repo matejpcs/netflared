@@ -129,31 +129,6 @@ cfg.profiles.add(new Profile("Netflared Server 1", "play.yourdomain.com", 25565)
 
 ---
 
-## Server-side setup
-
-**This mod only handles the client half.** Your server still needs a working Cloudflare Tunnel + Access configuration. Specifically:
-
-1. In the Cloudflare Zero Trust dashboard, create a tunnel pointing to `localhost:25565` (or wherever your Minecraft server listens).
-2. Add a **Public Hostname** for `play.yourdomain.com`:
-   - **Service Type: TCP** (not HTTP/HTTPS)
-   - **URL: `localhost:25565`**
-3. Under **Network** for your domain, ensure **WebSockets: On**.
-4. If you're using Cloudflare Access, configure the policy (email OTP, service token, etc.) as needed.
-
-### The most common failure mode
-
-If you see `websocket: bad handshake` in the game log, it's almost always because the tunnel's ingress is configured as `http://localhost:25565` instead of `tcp://localhost:25565`. Minecraft speaks raw TCP — Cloudflare's HTTP proxy will reject the handshake every time.
-
-Quick sanity check: run the exact command the mod runs, from a plain terminal:
-
-```
-cloudflared access tcp --hostname play.yourdomain.com --url localhost:25565
-```
-
-If that fails too, the problem is server-side and has nothing to do with this mod.
-
----
-
 ## Things worth knowing
 
 - **The first connection downloads a ~30 MB binary.** It's placed in `config/netflared/bin/`. Nothing is downloaded until you click Connect for the first time.
@@ -161,7 +136,6 @@ If that fails too, the problem is server-side and has nothing to do with this mo
 - **No update pinning.** The download always grabs the *latest* cloudflared release from GitHub. If Cloudflare ever renames a release asset, downloads will start failing. Pinning a specific version tag is a small change to `CLOUDFLARED_RELEASE_BASE` in `TunnelManager.java`.
 - **The mod is client-only.** It declares `"environment": "client"` in `fabric.mod.json`, so it does nothing on a server and is safe to leave installed while playing on other servers.
 - **Multiple tunnels can run at once.** Each profile is an independent cloudflared process. They're all cleaned up when the client exits.
-- **The F9 keybind is rebindable** under Options → Controls → Key Binds → Netflared.
 
 ---
 

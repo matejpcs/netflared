@@ -7,17 +7,16 @@ A **client-side** Fabric mod for Minecraft 26.2 that manages Cloudflare Access t
 ## What it does
 
 1. Adds a **"Netflared"** button to the top-left of the multiplayer server list screen.
-2. Pressing **F9** (rebindable) on the title screen or multiplayer screen opens the same settings UI.
-3. The settings screen lets you configure **multiple tunnel profiles**, each with:
+2. The settings screen lets you configure **multiple tunnel profiles**, each with:
    - A display name (used as the server name in the multiplayer list)
    - A Cloudflare tunnel domain (e.g. `play.example.com`)
    - A local port the tunnel binds to (default `25565`)
-4. Clicking **Connect** for a profile:
+3. Clicking **Connect** for a profile:
    - Downloads the official `cloudflared` binary from Cloudflare's GitHub releases **if it isn't already present**
    - Runs `cloudflared access tcp --hostname <domain> --url localhost:<port>`
    - Shows a status overlay (`Downloading`, `Establishing tunnel`, `Connected`, `Error`)
    - Offers a **Join** button that connects you directly to `localhost:<port>`
-5. All tunnels are killed when Minecraft exits. Nothing runs silently — the binary is never downloaded and no process is ever spawned without an explicit user action.
+4. All tunnels are killed when Minecraft exits. Nothing runs silently — the binary is never downloaded and no process is ever spawned without an explicit user action.
 
 ---
 

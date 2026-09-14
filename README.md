@@ -75,8 +75,6 @@ Everything lives under `.minecraft/config/netflared/`:
 | `netflared.json` | Profiles (name, domain, port). Edit by hand if you prefer. |
 | `bin/cloudflared` (or `cloudflared.exe` on Windows) | The downloaded cloudflared binary. Delete it to force a fresh download. |
 
-The mod never writes outside this directory.
-
 ---
 
 ## Building from source

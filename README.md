@@ -16,7 +16,7 @@ A **client-side** Fabric mod for Minecraft 26.2 that manages Cloudflare Access t
    - Runs `cloudflared access tcp --hostname <domain> --url localhost:<port>`
    - Shows a status overlay (`Downloading`, `Establishing tunnel`, `Connected`, `Error`)
    - Offers a **Join** button that connects you directly to `localhost:<port>`
-4. All tunnels are killed when Minecraft exits. Nothing runs silently — the binary is never downloaded and no process is ever spawned without an explicit user action.
+4. All tunnels are killed when Minecraft exits. Nothing runs silently, the binary is never downloaded and no process is ever spawned without an explicit user action.
 
 ---
 

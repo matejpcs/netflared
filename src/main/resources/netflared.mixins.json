@@ -1,0 +1,11 @@
+{
+  "required": true,
+  "package": "com.netflared.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "client": [
+    "MultiplayerScreenMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

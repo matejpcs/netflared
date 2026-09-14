@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "netflared",
+  "version": "${version}",
+  "name": "Netflared",
+  "description": "Connect to Cloudflare Access-protected Minecraft servers via cloudflared tunnels. Multi-server profiles, auto-download, and one-click join.",
+  "authors": ["MatějPCs"],
+  "contact": {},
+  "license": "MIT",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "com.netflared.NetflaredMod"
+    ]
+  },
+  "mixins": [
+    "netflared.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.19.0",
+    "minecraft": "~26.2",
+    "java": ">=25",
+    "fabric-api": "*"
+  }
+}

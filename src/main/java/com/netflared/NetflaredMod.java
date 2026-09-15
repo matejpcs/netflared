@@ -41,6 +41,7 @@ public class NetflaredMod implements ClientModInitializer {
         Path configDir = FabricLoader.getInstance().getConfigDir().resolve(MOD_ID);
         config = NetflaredConfig.load(configDir);
         tunnelManager = new TunnelManager(configDir);
+        tunnelManager.killOrphanedTunnels();
 
         KeyMapping.Category category = KeyMapping.Category.register(
                 Identifier.fromNamespaceAndPath(MOD_ID, "tunnel"));

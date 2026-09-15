@@ -30,6 +30,14 @@ public class NetflaredMod implements ClientModInitializer {
 
     private KeyMapping openTunnelKey;
 
+    /**
+     * Daemon thread that waits for the client to stop, then kills all
+     * tunnels and hard-halts the JVM. This runs independently of the
+     * shutdown-hook sequence, so it can fire before the 26.2 client
+     * watchdog decides the JVM is stuck.
+     */
+    private Thread shutdownGuard;
+
     public static NetflaredMod getInstance() { return INSTANCE; }
     public static NetflaredConfig getConfig() { return config; }
     public static TunnelManager getTunnelManager() { return tunnelManager; }
@@ -42,6 +50,23 @@ public class NetflaredMod implements ClientModInitializer {
         config = NetflaredConfig.load(configDir);
         tunnelManager = new TunnelManager(configDir);
         tunnelManager.killOrphanedTunnels();
+
+        // Guard thread: sleeps forever, gets interrupted on client stop.
+        // When interrupted, it kills tunnels and halts the JVM immediately,
+        // bypassing the shutdown-hook queue and the watchdog timer.
+        shutdownGuard = new Thread(() -> {
+            try {
+                Thread.sleep(Long.MAX_VALUE);
+            } catch (InterruptedException e) {
+                // Client is stopping — clean up and exit now.
+                try {
+                    if (tunnelManager != null) tunnelManager.forceStopAll();
+                } catch (Throwable ignored) {}
+                Runtime.getRuntime().halt(0);
+            }
+        }, "netflared-shutdown-guard");
+        shutdownGuard.setDaemon(true);
+        shutdownGuard.start();
 
         KeyMapping.Category category = KeyMapping.Category.register(
                 Identifier.fromNamespaceAndPath(MOD_ID, "tunnel"));
@@ -61,29 +86,18 @@ public class NetflaredMod implements ClientModInitializer {
             }
         });
 
-        // Fast, non-blocking cleanup when the client stops.
-        // forceStopAll() returns immediately without waiting for processes
-        // to die, so the JVM can actually exit before the 26.2 watchdog
-        // fires.
+        // Fire the guard thread the moment the client begins stopping.
         ClientLifecycleEvents.CLIENT_STOPPING.register(client -> {
-            if (tunnelManager != null) tunnelManager.forceStopAll();
+            if (shutdownGuard != null) shutdownGuard.interrupt();
         });
 
-        // Safety net: if anything else is still holding the JVM open, kill
-        // it hard after a short grace period. Runtime.halt() bypasses the
-        // shutdown-hook sequence entirely, so it can't deadlock. This is
-        // the same technique the ForceExitOnShutdown mod uses to fix the
-        // 26.2 "Client shutdown from post-main" crash.
+        // Secondary shutdown hook — in case CLIENT_STOPPING never fires
+        // (e.g. the process is killed from outside). No sleep, halt
+        // immediately.
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            if (tunnelManager != null) tunnelManager.forceStopAll();
-
-            // Give the JVM ~500ms to finish whatever else it's doing,
-            // then pull the plug.
             try {
-                Thread.sleep(500);
-            } catch (InterruptedException ignored) {
-                Thread.currentThread().interrupt();
-            }
+                if (tunnelManager != null) tunnelManager.forceStopAll();
+            } catch (Throwable ignored) {}
             Runtime.getRuntime().halt(0);
         }, "netflared-shutdown"));
 

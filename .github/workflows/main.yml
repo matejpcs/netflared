@@ -18,7 +18,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
       with:
-        # Fetch full history so `git log --since` works across the cutoff.
+        # Full history so `git log --since` works across the cutoff.
         fetch-depth: 0
 
     - name: Set up JDK 25
@@ -27,16 +27,33 @@ jobs:
         java-version: '25'
         distribution: 'temurin'
 
-    # Install a standalone Gradle so we can generate the wrapper.
+    # Force the wrapper to Gradle 9.5.0 before anything tries to configure
+    # the build. Fabric Loom 1.17.x requires Gradle 9.5.0, so 9.1.0 fails.
+    - name: Force wrapper to Gradle 9.5.0
+      run: |
+        if [ -f gradle/wrapper/gradle-wrapper.properties ]; then
+          sed -i 's|distributionUrl=.*|distributionUrl=https\\://services.gradle.org/distributions/gradle-9.5.0-bin.zip|' \
+            gradle/wrapper/gradle-wrapper.properties
+          echo "--- gradle-wrapper.properties ---"
+          cat gradle/wrapper/gradle-wrapper.properties
+        else
+          echo "No wrapper properties found — will generate fresh via 'gradle wrapper'."
+        fi
+
     - name: Setup Gradle (standalone, for wrapper generation)
       uses: gradle/actions/setup-gradle@v4
       with:
-        gradle-version: '9.5.0'   # supports JDK 25
+        gradle-version: '9.5.0'
 
-    - name: Generate Gradle Wrapper
+    - name: Ensure Gradle Wrapper exists
       run: |
-        gradle wrapper --gradle-version 9.1.0
+        if [ ! -f ./gradlew ]; then
+          gradle wrapper --gradle-version 9.5.0
+        fi
         chmod +x ./gradlew
+
+    - name: Show Gradle version
+      run: ./gradlew --version
 
     - name: Build with Gradle Wrapper
       run: ./gradlew build --no-daemon

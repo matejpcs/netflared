@@ -31,7 +31,7 @@ jobs:
     - name: Setup Gradle (standalone, for wrapper generation)
       uses: gradle/actions/setup-gradle@v4
       with:
-        gradle-version: '9.1.0'   # supports JDK 25
+        gradle-version: '9.5.0'   # supports JDK 25
 
     - name: Generate Gradle Wrapper
       run: |

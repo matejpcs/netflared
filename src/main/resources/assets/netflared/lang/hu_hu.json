@@ -4,7 +4,7 @@
   "netflared.settings.domain": "Alagút tartománya",
   "netflared.settings.port": "Helyi port",
   "netflared.settings.add": "+ Szerver hozzáadása",
-  "netflared.settings.save": "Mentés és szinkronizálás",
+  "netflared.settings.save": "Mentés",
   "netflared.settings.saved": "Beállítások mentve",
   "netflared.settings.save_failed": "A beállításokat nem sikerült menteni",
   "netflared.settings.cancel": "Mégse",

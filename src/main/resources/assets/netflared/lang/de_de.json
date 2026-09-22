@@ -4,7 +4,7 @@
   "netflared.settings.domain": "Tunnel-Domain",
   "netflared.settings.port": "Lokaler Port",
   "netflared.settings.add": "+ Server hinzufügen",
-  "netflared.settings.save": "Speichern & synchronisieren",
+  "netflared.settings.save": "Speichern",
   "netflared.settings.saved": "Einstellungen gespeichert",
   "netflared.settings.save_failed": "Einstellungen konnten nicht gespeichert werden",
   "netflared.settings.cancel": "Abbrechen",

@@ -61,7 +61,7 @@ public class NetflaredMod implements ClientModInitializer {
                 "https://raw.githubusercontent.com/matejpcs/netflared/lang/src/main/resources/assets/netflared/lang/";
         private static final Map<String, String> values = new HashMap<>();
         private static volatile String loadedLocale = "en_us";
-        private static volatile boolean refreshStarted;
+        private static volatile String lastRequestedLocale;
         String[][] defaults = {
                 {"netflared.settings.title", "Netflared Settings"},
                 {"netflared.settings.name", "Name"},
@@ -114,6 +114,8 @@ public class NetflaredMod implements ClientModInitializer {
                 }
             } catch (Throwable ignored) {}
 
+            if (locale.equals(lastRequestedLocale)) return;
+            lastRequestedLocale = locale;
             loadedLocale = locale;
             final String selected = locale;
             Thread thread = new Thread(() -> {

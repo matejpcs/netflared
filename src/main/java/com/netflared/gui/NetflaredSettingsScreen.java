@@ -28,10 +28,10 @@ public class NetflaredSettingsScreen extends Screen {
 
     @Override
     protected void init() {
-        rebuildWidgets();
+        rebuildProfileWidgets();
     }
 
-    private void rebuildWidgets() {
+    private void rebuildProfileWidgets() {
         clearWidgets();
         profileWidgets.clear();
 
@@ -52,7 +52,7 @@ public class NetflaredSettingsScreen extends Screen {
                 btn -> {
                     cfg.addProfile();
                     scrollOffset = Integer.MAX_VALUE;
-                    rebuildWidgets();
+                    rebuildProfileWidgets();
                 }).bounds(centerX - 155, height - 52, 100, 20).build());
 
         addRenderableWidget(Button.builder(
@@ -79,7 +79,7 @@ public class NetflaredSettingsScreen extends Screen {
             int maxScroll = Math.max(0,
                     NetflaredMod.getConfig().getProfiles().size() * ROW_HEIGHT - (LIST_BOTTOM - LIST_TOP));
             scrollOffset = (int) Math.max(0, Math.min(maxScroll, scrollOffset - deltaY * ROW_HEIGHT));
-            rebuildWidgets();
+            rebuildProfileWidgets();
             return true;
         }
         return super.mouseScrolled(mouseX, mouseY, deltaX, deltaY);
@@ -176,7 +176,7 @@ public class NetflaredSettingsScreen extends Screen {
                     NetflaredMod.getTunnelManager().stopTunnel(profile.domain);
                 }
                 NetflaredMod.getConfig().removeProfile(index);
-                rebuildWidgets();
+                rebuildProfileWidgets();
             }).bounds(centerX + 195, y, 18, 18).build();
             removeBtn.active = NetflaredMod.getConfig().getProfiles().size() > 1;
             addRenderableWidget(removeBtn);

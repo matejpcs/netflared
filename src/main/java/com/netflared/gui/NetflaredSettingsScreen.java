@@ -63,17 +63,17 @@ public class NetflaredSettingsScreen extends Screen {
                 }).bounds(centerX - 155, height - 52, 100, 20).build());
 
         addRenderableWidget(Button.builder(
-                Component.translatable("netflared.settings.save"),
+                NetflaredMod.tr("netflared.settings.save"),
                 btn -> saveAndStay())
                 .bounds(centerX - 50, height - 52, 100, 20).build());
 
         addRenderableWidget(Button.builder(
-                Component.translatable("netflared.settings.cancel"),
+                NetflaredMod.tr("netflared.settings.cancel"),
                 btn -> minecraft.gui.setScreen(parent))
                 .bounds(centerX + 55, height - 52, 100, 20).build());
 
         addRenderableWidget(Button.builder(
-                Component.translatable("netflared.settings.back"),
+                NetflaredMod.tr("netflared.settings.back"),
                 btn -> minecraft.gui.setScreen(parent))
                 .bounds(centerX - 50, height - 25, 100, 20).build());
 
@@ -89,10 +89,10 @@ public class NetflaredSettingsScreen extends Screen {
         try {
             NetflaredMod.getConfig().save(
                     FabricLoader.getInstance().getConfigDir().resolve(NetflaredMod.MOD_ID));
-            showFeedback(Component.translatable("netflared.settings.saved"), 0xFF55FF88);
+            showFeedback(NetflaredMod.tr("netflared.settings.saved"), 0xFF55FF88);
         } catch (Exception e) {
             NetflaredMod.LOGGER.error("[Netflared] Failed to save settings", e);
-            showFeedback(Component.translatable("netflared.settings.save_failed"), 0xFFFF5555);
+            showFeedback(NetflaredMod.tr("netflared.settings.save_failed"), 0xFFFF5555);
         }
     }
 
@@ -122,9 +122,9 @@ public class NetflaredSettingsScreen extends Screen {
 
         int centerX = width / 2;
         graphics.text(font, title, centerX - font.width(title) / 2, 15, 0xFF55FFFF, true);
-        graphics.text(font, Component.translatable("netflared.settings.name"), centerX - 170, 31, 0xFFFFD166, false);
-        graphics.text(font, Component.translatable("netflared.settings.domain"), centerX - 85, 31, 0xFFB8A1FF, false);
-        graphics.text(font, Component.translatable("netflared.settings.port"), centerX + 55, 31, 0xFF63D7FF, false);
+        graphics.text(font, NetflaredMod.tr("netflared.settings.name"), centerX - 170, 31, 0xFFFFD166, false);
+        graphics.text(font, NetflaredMod.tr("netflared.settings.domain"), centerX - 85, 31, 0xFFB8A1FF, false);
+        graphics.text(font, NetflaredMod.tr("netflared.settings.port"), centerX + 55, 31, 0xFF63D7FF, false);
 
         for (ProfileWidget pw : profileWidgets) {
             if (pw.y + ROW_HEIGHT > LIST_TOP && pw.y < LIST_BOTTOM) {
@@ -177,21 +177,21 @@ public class NetflaredSettingsScreen extends Screen {
 
         void addWidgets() {
             nameBox = new EditBox(font, centerX - 170, y, 80, 18,
-                    Component.translatable("netflared.settings.name"));
+                    NetflaredMod.tr("netflared.settings.name"));
             nameBox.setValue(profile.name);
             nameBox.setMaxLength(64);
             nameBox.setResponder(s -> profile.name = s.trim());
             addRenderableWidget(nameBox);
 
             domainBox = new EditBox(font, centerX - 85, y, 130, 18,
-                    Component.translatable("netflared.settings.domain"));
+                    NetflaredMod.tr("netflared.settings.domain"));
             domainBox.setValue(profile.domain);
             domainBox.setMaxLength(253);
             domainBox.setResponder(s -> profile.domain = s.trim());
             addRenderableWidget(domainBox);
 
             portBox = new EditBox(font, centerX + 55, y, 55, 18,
-                    Component.translatable("netflared.settings.port"));
+                    NetflaredMod.tr("netflared.settings.port"));
             portBox.setValue(Integer.toString(profile.port));
             portBox.setMaxLength(5);
             portBox.setResponder(s -> {

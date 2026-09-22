@@ -185,7 +185,8 @@ public class NetflaredSettingsScreen extends Screen {
             addRenderableWidget(removeBtn);
 
             boolean visible = y + ROW_HEIGHT > LIST_TOP && y < LIST_BOTTOM;
-            nameBox.visible = domainBox.visible = portBox.visible = connectBtn.visible = removeBtn.visible = visible;\n            nameBox.active = domainBox.active = portBox.active = connectBtn.active = removeBtn.active = visible;
+            nameBox.visible = domainBox.visible = portBox.visible = connectBtn.visible = removeBtn.visible = visible;
+            nameBox.active = domainBox.active = portBox.active = connectBtn.active = removeBtn.active = visible;
         }
 
         private void toggleTunnel(Button btn) {

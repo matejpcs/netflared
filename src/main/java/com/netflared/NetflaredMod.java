@@ -60,8 +60,8 @@ public class NetflaredMod implements ClientModInitializer {
         private static final String LANG_BRANCH =
                 "https://raw.githubusercontent.com/matejpcs/netflared/lang/src/main/resources/assets/netflared/lang/";
         private static final Map<String, String> values = new HashMap<>();
-        private static volatile String loadedLocale = "en_us";
-        private static volatile String lastRequestedLocale;
+        private static volatile String loadedLocale;
+        private static volatile String requestedLocale;
         private static final String[][] defaults = {
                 {"netflared.settings.title", "Netflared Settings"},
                 {"netflared.settings.name", "Name"},
@@ -106,16 +106,9 @@ public class NetflaredMod implements ClientModInitializer {
         }
 
         public static synchronized void refresh() {
-            String locale = "en_us";
-            try {
-                if (MinecraftHolder.client() != null) {
-                    locale = MinecraftHolder.client().getLanguageManager().getSelected();
-                }
-            } catch (Throwable ignored) {}
-
-            if (locale.equals(lastRequestedLocale)) return;
-            lastRequestedLocale = locale;
-            loadedLocale = locale;
+            String locale = currentLocale();
+            if (locale.equals(requestedLocale)) return;
+            requestedLocale = locale;
             final String selected = locale;
             Thread thread = new Thread(() -> {
                 try {
@@ -126,11 +119,15 @@ public class NetflaredMod implements ClientModInitializer {
                     Path selectedFile = langDir.resolve(selected + ".json");
                     Path englishFile = langDir.resolve("en_us.json");
 
+                    loadFile(englishFile);
+                    if (!"en_us".equals(selected)) loadFile(selectedFile);
+
                     downloadIfChanged(selectedFile, selected);
                     if (!"en_us".equals(selected)) downloadIfChanged(englishFile, "en_us");
 
                     loadFile(englishFile);
                     if (!"en_us".equals(selected)) loadFile(selectedFile);
+                    loadedLocale = selected;
 
                     LOGGER.info("[Netflared] Loaded dynamic language {}", selected);
                 } catch (Exception e) {
@@ -139,6 +136,22 @@ public class NetflaredMod implements ClientModInitializer {
             }, "netflared-language-sync");
             thread.setDaemon(true);
             thread.start();
+        }
+
+        public static void refreshIfChanged() {
+            String locale = currentLocale();
+            if (!locale.equals(loadedLocale) && !locale.equals(requestedLocale)) {
+                refresh();
+            }
+        }
+
+        private static String currentLocale() {
+            try {
+                if (MinecraftHolder.client() != null) {
+                    return MinecraftHolder.client().getLanguageManager().getSelected();
+                }
+            } catch (Throwable ignored) {}
+            return "en_us";
         }
 
         public static String text(String key, Object... args) {
@@ -201,7 +214,7 @@ public class NetflaredMod implements ClientModInitializer {
     }
 
     public static void refreshTranslations() {
-        Translations.refresh();
+        Translations.refreshIfChanged();
     }
 
     public static net.minecraft.network.chat.Component tr(String key, Object... args) {
@@ -216,6 +229,7 @@ public class NetflaredMod implements ClientModInitializer {
         config = NetflaredConfig.load(configDir);
         tunnelManager = new TunnelManager(configDir);
         tunnelManager.killOrphanedTunnels();
+        Translations.refresh();
 
         // Guard thread: sleeps forever, gets interrupted on client stop.
         // When interrupted, it kills tunnels and halts the JVM immediately,
@@ -244,6 +258,7 @@ public class NetflaredMod implements ClientModInitializer {
         ));
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            Translations.refreshIfChanged();
             while (openTunnelKey.consumeClick()) {
                 Screen current = client.gui.screen();
                 if (current instanceof TitleScreen || current instanceof JoinMultiplayerScreen) {

@@ -30,10 +30,10 @@ public class NetflaredStatusScreen extends Screen {
     private volatile String message = "Preparing...";
 
     private Button okButton;
-    private Button joinButton;
+    private Button joinButton;\n    private Button cancelButton;
 
     public NetflaredStatusScreen(Screen parent, NetflaredConfig.Profile profile) {
-        super(Component.literal("Netflared — " + profile.domain));
+        super(Component.translatable("netflared.status.title", profile.domain));
         this.parent = parent;
         this.profile = profile;
     }

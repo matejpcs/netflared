@@ -4,7 +4,7 @@
   "netflared.settings.domain": "Tonneldomein",
   "netflared.settings.port": "Plaaslike poort",
   "netflared.settings.add": "+ Bediener byvoeg",
-  "netflared.settings.save": "Stoor en sinkroniseer",
+  "netflared.settings.save": "Stoor",
   "netflared.settings.saved": "Instellings gestoor",
   "netflared.settings.save_failed": "Kon instellings nie stoor nie",
   "netflared.settings.cancel": "Kanselleer",

@@ -24,8 +24,9 @@ public class NetflaredSettingsScreen extends Screen {
     private static final int LIST_BOTTOM = 130;
 
     public NetflaredSettingsScreen(Screen parent) {
-        super(Component.translatable("netflared.settings.title"));
+        super(NetflaredMod.tr("netflared.settings.title"));
         this.parent = parent;
+        NetflaredMod.refreshTranslations();
     }
 
     public boolean isDebugUser() {
@@ -54,7 +55,7 @@ public class NetflaredSettingsScreen extends Screen {
         }
 
         addRenderableWidget(Button.builder(
-                Component.translatable("netflared.settings.add"),
+                NetflaredMod.tr("netflared.settings.add"),
                 btn -> {
                     cfg.addProfile();
                     scrollOffset = Integer.MAX_VALUE;
@@ -78,7 +79,7 @@ public class NetflaredSettingsScreen extends Screen {
 
         if (isDebugUser()) {
             addRenderableWidget(Button.builder(
-                    Component.translatable("netflared.debug.button"),
+                    NetflaredMod.tr("netflared.debug.button"),
                     btn -> minecraft.gui.setScreen(new NetflaredDebugScreen(this)))
                     .bounds(centerX + 55, height - 25, 100, 20).build());
         }
@@ -205,7 +206,7 @@ public class NetflaredSettingsScreen extends Screen {
             addRenderableWidget(portBox);
 
             connectBtn = Button.builder(
-                    Component.translatable(NetflaredMod.getTunnelManager().isTunnelRunning(profile.domain)
+                    NetflaredMod.tr(NetflaredMod.getTunnelManager().isTunnelRunning(profile.domain)
                             ? "netflared.status.disconnect" : "netflared.status.connect"),
                     btn -> toggleTunnel(btn))
                     .bounds(centerX + 115, y, 75, 18).build();
@@ -231,7 +232,7 @@ public class NetflaredSettingsScreen extends Screen {
             if (tm.isTunnelRunning(profile.domain)) {
                 tm.stopTunnel(profile.domain);
                 profile.running = false;
-                btn.setMessage(Component.translatable("netflared.status.connect"));
+                btn.setMessage(NetflaredMod.tr("netflared.status.connect"));
                 return;
             }
 

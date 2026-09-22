@@ -4,7 +4,7 @@
   "netflared.settings.domain": "דומיין המנהרה",
   "netflared.settings.port": "יציאה מקומית",
   "netflared.settings.add": "+ הוספת שרת",
-  "netflared.settings.save": "שמירה וסנכרון",
+  "netflared.settings.save": "שמירה",
   "netflared.settings.saved": "ההגדרות נשמרו",
   "netflared.settings.save_failed": "לא ניתן לשמור את ההגדרות",
   "netflared.settings.cancel": "ביטול",

@@ -8,7 +8,7 @@
   "netflared.settings.domain": "Tunnel Domain",
   "netflared.settings.port": "Local Port",
   "netflared.settings.add": "+ Add Server",
-  "netflared.settings.save": "Save & Sync",
+  "netflared.settings.save": "Save",
   "netflared.settings.saved": "Settings saved",
   "netflared.settings.save_failed": "Could not save settings",
   "netflared.settings.cancel": "Cancel",

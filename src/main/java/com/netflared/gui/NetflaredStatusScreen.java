@@ -97,7 +97,7 @@ public class NetflaredStatusScreen extends Screen {
         backButton = Button.builder(
                 NetflaredMod.tr("netflared.status.back"),
                 btn -> minecraft.gui.setScreen(parent))
-                .bounds(centerX - 105, centerY + 50, 100, 20).build();
+                .bounds(centerX - 50, centerY + 50, 100, 20).build();
         backButton.visible = state != State.WORKING;
         backButton.active = state != State.WORKING;
         addRenderableWidget(backButton);

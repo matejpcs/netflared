@@ -4,7 +4,7 @@
   "netflared.settings.domain": "Doména tunelu",
   "netflared.settings.port": "Lokální port",
   "netflared.settings.add": "+ Přidat server",
-  "netflared.settings.save": "Uložit a synchronizovat",
+  "netflared.settings.save": "Uložit",
   "netflared.settings.saved": "Nastavení uloženo",
   "netflared.settings.save_failed": "Nastavení se nepodařilo uložit",
   "netflared.settings.cancel": "Zrušit",

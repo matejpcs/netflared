@@ -96,8 +96,11 @@ public class NetflaredSettingsScreen extends Screen {
         graphics.text(font, Component.translatable("netflared.settings.port"), centerX + 55, 31, 0xFFAAAAAA, false);
 
         for (ProfileWidget pw : profileWidgets) {
-            int bg = (pw.index % 2 == 0) ? 0x22000000 : 0x11000000;
-            graphics.fill(centerX - 175, pw.y - 3, centerX + 175, pw.y + 21, bg);
+            if (pw.y + ROW_HEIGHT > LIST_TOP && pw.y < LIST_BOTTOM) {
+                int bg = (pw.index % 2 == 0) ? 0x22000000 : 0x11000000;
+                graphics.fill(centerX - 175, Math.max(LIST_TOP, pw.y - 3),
+                        centerX + 175, Math.min(LIST_BOTTOM, pw.y + 21), bg);
+            }
         }
 
         int maxScroll = Math.max(0,
@@ -182,7 +185,7 @@ public class NetflaredSettingsScreen extends Screen {
             addRenderableWidget(removeBtn);
 
             boolean visible = y + ROW_HEIGHT > LIST_TOP && y < LIST_BOTTOM;
-            nameBox.active = domainBox.active = portBox.active = connectBtn.active = removeBtn.active = visible;
+            nameBox.visible = domainBox.visible = portBox.visible = connectBtn.visible = removeBtn.visible = visible;\n            nameBox.active = domainBox.active = portBox.active = connectBtn.active = removeBtn.active = visible;
         }
 
         private void toggleTunnel(Button btn) {

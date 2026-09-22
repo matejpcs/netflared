@@ -62,6 +62,46 @@ public class NetflaredMod implements ClientModInitializer {
         private static final Map<String, String> values = new HashMap<>();
         private static volatile String loadedLocale = "en_us";
         private static volatile boolean refreshStarted;
+        String[][] defaults = {
+                {"netflared.settings.title", "Netflared Settings"},
+                {"netflared.settings.name", "Name"},
+                {"netflared.settings.domain", "Tunnel Domain"},
+                {"netflared.settings.port", "Local Port"},
+                {"netflared.settings.add", "+ Add Server"},
+                {"netflared.settings.save", "Save & Sync"},
+                {"netflared.settings.saved", "Settings saved"},
+                {"netflared.settings.save_failed", "Could not save settings"},
+                {"netflared.settings.cancel", "Cancel"},
+                {"netflared.settings.back", "Back"},
+                {"netflared.status.title", "Netflared — %s"},
+                {"netflared.status.working", "Connecting..."},
+                {"netflared.status.downloading", "Downloading cloudflared..."},
+                {"netflared.status.connecting", "Establishing tunnel..."},
+                {"netflared.status.ready", "Tunnel ready"},
+                {"netflared.status.connected", "Connection established"},
+                {"netflared.status.exited", "cloudflared stopped unexpectedly"},
+                {"netflared.status.failed", "Connection failed"},
+                {"netflared.status.error_detail", "Details: %s"},
+                {"netflared.status.local", "Local endpoint: %s"},
+                {"netflared.status.domain", "Cloudflare host: %s"},
+                {"netflared.status.join", "Join"},
+                {"netflared.status.back", "Back"},
+                {"netflared.status.cancel", "Cancel"},
+                {"netflared.status.idle", "Idle"},
+                {"netflared.status.connect", "Connect"},
+                {"netflared.status.disconnect", "Disconnect"},
+                {"netflared.debug.button", "Debug"},
+                {"netflared.debug.title", "Netflared Debug Tools"},
+                {"netflared.debug.subtitle", "Internal UI testing — no tunnel is started"},
+                {"netflared.debug.working", "Test Connecting"},
+                {"netflared.debug.success", "Test Connected"},
+                {"netflared.debug.error", "Test Error"},
+                {"netflared.debug.settings", "Test Settings"},
+                {"netflared.debug.working_message", "Waiting for tunnel..."},
+                {"netflared.debug.success_message", "Debug state: tunnel ready"},
+                {"netflared.debug.error_message", "Debug state: simulated connection failure"}
+        };
+        for (String[] entry : defaults) values.put(entry[0], entry[1]);
 
         public static synchronized void refresh() {
             if (refreshStarted) return;

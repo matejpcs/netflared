@@ -276,12 +276,8 @@ public class TunnelManager {
 
     public synchronized void stopTunnel(String domain) {
         Process process = activeTunnels.remove(domain);
-        if (process != null) {
-            process.toHandle().destroyForcibly();
-            try {
-                process.toHandle().descendants().forEach(p -> p.destroyForcibly());
-            } catch (Throwable ignored) {
-            }
+        if (process != null && process.isAlive()) {
+            killTree(process.toHandle());
         }
         try { Files.deleteIfExists(pidFileFor(domain)); } catch (IOException ignored) {}
     }

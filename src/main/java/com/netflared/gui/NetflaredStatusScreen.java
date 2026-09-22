@@ -125,7 +125,7 @@ public class NetflaredStatusScreen extends Screen {
                 .build();
         joinButton.visible = state == State.SUCCESS;
         joinButton.active = state == State.SUCCESS;
-        this.addRenderableWidget(joinButton);
+        this.addRenderableWidget(joinButton);\n\n        cancelButton = Button.builder(Component.translatable("netflared.status.cancel"), btn -> {\n            if (state == State.WORKING || state == State.SUCCESS) {\n                NetflaredMod.getTunnelManager().stopTunnel(profile.domain);\n                profile.running = false;\n            }\n            minecraft.gui.setScreen(parent);\n        }).bounds(centerX - 50, centerY + 75, 100, 20).build();\n        cancelButton.visible = state == State.WORKING || state == State.SUCCESS;\n        this.addRenderableWidget(cancelButton);
     }
 
     @Override

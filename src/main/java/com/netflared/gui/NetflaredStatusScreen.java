@@ -55,24 +55,24 @@ public class NetflaredStatusScreen extends Screen {
                 var manager = NetflaredMod.getTunnelManager();
                 if (!manager.isBinaryReady()) {
                     updateStatus(
-                            Component.translatable("netflared.status.downloading").getString(),
+                            NetflaredMod.tr("netflared.status.downloading").getString(),
                             State.WORKING);
                     manager.ensureBinary();
                 }
 
                 updateStatus(
-                        Component.translatable("netflared.status.connecting").getString(),
+                        NetflaredMod.tr("netflared.status.connecting").getString(),
                         State.WORKING);
                 Process process = manager.startTunnel(profile);
                 Thread.sleep(1500);
 
                 if (process.isAlive()) {
                     updateStatus(
-                            Component.translatable("netflared.status.ready").getString(),
+                            NetflaredMod.tr("netflared.status.ready").getString(),
                             State.SUCCESS);
                 } else {
                     updateStatus(
-                            Component.translatable("netflared.status.exited").getString(),
+                            NetflaredMod.tr("netflared.status.exited").getString(),
                             State.ERROR);
                 }
             } catch (Exception e) {
@@ -81,7 +81,7 @@ public class NetflaredStatusScreen extends Screen {
                         ? e.getClass().getSimpleName()
                         : e.getMessage();
                 updateStatus(
-                        Component.translatable("netflared.status.error_detail", detail).getString(),
+                        NetflaredMod.tr("netflared.status.error_detail", detail).getString(),
                         State.ERROR);
             }
         }, "netflared-tunnel-setup");
@@ -95,7 +95,7 @@ public class NetflaredStatusScreen extends Screen {
         int centerY = height / 2;
 
         backButton = Button.builder(
-                Component.translatable("netflared.status.back"),
+                NetflaredMod.tr("netflared.status.back"),
                 btn -> minecraft.gui.setScreen(parent))
                 .bounds(centerX - 105, centerY + 50, 100, 20).build();
         backButton.visible = state != State.WORKING;
@@ -103,7 +103,7 @@ public class NetflaredStatusScreen extends Screen {
         addRenderableWidget(backButton);
 
         joinButton = Button.builder(
-                Component.translatable("netflared.status.join"),
+                NetflaredMod.tr("netflared.status.join"),
                 btn -> {
                     ServerAddress address = ServerAddress.parseString(profile.getJoinAddress());
                     ServerData data = new ServerData(
@@ -116,7 +116,7 @@ public class NetflaredStatusScreen extends Screen {
         addRenderableWidget(joinButton);
 
         cancelButton = Button.builder(
-                Component.translatable("netflared.status.cancel"),
+                NetflaredMod.tr("netflared.status.cancel"),
                 btn -> {
                     NetflaredMod.getTunnelManager().stopTunnel(profile.domain);
                     profile.running = false;
@@ -135,9 +135,9 @@ public class NetflaredStatusScreen extends Screen {
         int centerX = width / 2;
         int centerY = height / 2;
         Component heading = switch (state) {
-            case WORKING -> Component.translatable("netflared.status.working");
-            case SUCCESS -> Component.translatable("netflared.status.connected");
-            case ERROR -> Component.translatable("netflared.status.failed");
+            case WORKING -> NetflaredMod.tr("netflared.status.working");
+            case SUCCESS -> NetflaredMod.tr("netflared.status.connected");
+            case ERROR -> NetflaredMod.tr("netflared.status.failed");
         };
 
         int headingColor = switch (state) {
@@ -151,10 +151,10 @@ public class NetflaredStatusScreen extends Screen {
 
         if (state == State.SUCCESS) {
             drawCentered(graphics,
-                    Component.translatable("netflared.status.local", profile.getJoinAddress()),
+                    NetflaredMod.tr("netflared.status.local", profile.getJoinAddress()),
                     centerX, centerY + 12, 0xFF63D7FF, false);
             drawCentered(graphics,
-                    Component.translatable("netflared.status.domain", profile.domain),
+                    NetflaredMod.tr("netflared.status.domain", profile.domain),
                     centerX, centerY + 27, 0xFFB8A1FF, false);
         }
     }

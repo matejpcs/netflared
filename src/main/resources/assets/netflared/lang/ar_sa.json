@@ -4,7 +4,7 @@
   "netflared.settings.domain": "نطاق النفق",
   "netflared.settings.port": "المنفذ المحلي",
   "netflared.settings.add": "+ إضافة خادم",
-  "netflared.settings.save": "حفظ ومزامنة",
+  "netflared.settings.save": "حفظ",
   "netflared.settings.saved": "تم حفظ الإعدادات",
   "netflared.settings.save_failed": "تعذر حفظ الإعدادات",
   "netflared.settings.cancel": "إلغاء",

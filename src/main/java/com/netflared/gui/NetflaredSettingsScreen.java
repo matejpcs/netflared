@@ -17,6 +17,8 @@ public class NetflaredSettingsScreen extends Screen {
     private final Screen parent;
     private final List<ProfileWidget> profileWidgets = new ArrayList<>();
     private int scrollOffset;
+    private String feedbackMessage;
+    private long feedbackUntil;
     private static final int ROW_HEIGHT = 28;
     private static final int LIST_TOP = 42;
     private static final int LIST_BOTTOM = 130;
@@ -24,6 +26,10 @@ public class NetflaredSettingsScreen extends Screen {
     public NetflaredSettingsScreen(Screen parent) {
         super(Component.translatable("netflared.settings.title"));
         this.parent = parent;
+    }
+
+    public boolean isDebugUser() {
+        return minecraft != null && "Mathej2301".equals(minecraft.getUser().getName());
     }
 
     @Override
@@ -57,10 +63,8 @@ public class NetflaredSettingsScreen extends Screen {
 
         addRenderableWidget(Button.builder(
                 Component.translatable("netflared.settings.save"),
-                btn -> {
-                    cfg.save(FabricLoader.getInstance().getConfigDir().resolve(NetflaredMod.MOD_ID));
-                    minecraft.gui.setScreen(parent);
-                }).bounds(centerX - 50, height - 52, 100, 20).build());
+                btn -> saveAndStay())
+                .bounds(centerX - 50, height - 52, 100, 20).build());
 
         addRenderableWidget(Button.builder(
                 Component.translatable("netflared.settings.cancel"),
@@ -71,7 +75,33 @@ public class NetflaredSettingsScreen extends Screen {
                 Component.translatable("netflared.settings.back"),
                 btn -> minecraft.gui.setScreen(parent))
                 .bounds(centerX - 50, height - 25, 100, 20).build());
+
+        if (isDebugUser()) {
+            addRenderableWidget(Button.builder(
+                    Component.translatable("netflared.debug.button"),
+                    btn -> minecraft.gui.setScreen(new NetflaredDebugScreen(this)))
+                    .bounds(centerX + 55, height - 25, 100, 20).build());
+        }
     }
+
+    private void saveAndStay() {
+        try {
+            NetflaredMod.getConfig().save(
+                    FabricLoader.getInstance().getConfigDir().resolve(NetflaredMod.MOD_ID));
+            showFeedback(Component.translatable("netflared.settings.saved"), 0xFF55FF88);
+        } catch (Exception e) {
+            NetflaredMod.LOGGER.error("[Netflared] Failed to save settings", e);
+            showFeedback(Component.translatable("netflared.settings.save_failed"), 0xFFFF5555);
+        }
+    }
+
+    private void showFeedback(Component message, int color) {
+        feedbackMessage = message.getString();
+        feedbackUntil = System.currentTimeMillis() + 3500L;
+        feedbackColor = color;
+    }
+
+    private int feedbackColor = 0xFF55FF88;
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double deltaX, double deltaY) {
@@ -90,10 +120,10 @@ public class NetflaredSettingsScreen extends Screen {
         super.extractRenderState(graphics, mouseX, mouseY, delta);
 
         int centerX = width / 2;
-        graphics.text(font, title, centerX - font.width(title) / 2, 15, 0xFFFFFFFF, true);
-        graphics.text(font, Component.translatable("netflared.settings.name"), centerX - 170, 31, 0xFFAAAAAA, false);
-        graphics.text(font, Component.translatable("netflared.settings.domain"), centerX - 85, 31, 0xFFAAAAAA, false);
-        graphics.text(font, Component.translatable("netflared.settings.port"), centerX + 55, 31, 0xFFAAAAAA, false);
+        graphics.text(font, title, centerX - font.width(title) / 2, 15, 0xFF55FFFF, true);
+        graphics.text(font, Component.translatable("netflared.settings.name"), centerX - 170, 31, 0xFFFFD166, false);
+        graphics.text(font, Component.translatable("netflared.settings.domain"), centerX - 85, 31, 0xFFB8A1FF, false);
+        graphics.text(font, Component.translatable("netflared.settings.port"), centerX + 55, 31, 0xFF63D7FF, false);
 
         for (ProfileWidget pw : profileWidgets) {
             if (pw.y + ROW_HEIGHT > LIST_TOP && pw.y < LIST_BOTTOM) {
@@ -107,11 +137,17 @@ public class NetflaredSettingsScreen extends Screen {
                 NetflaredMod.getConfig().getProfiles().size() * ROW_HEIGHT - (LIST_BOTTOM - LIST_TOP));
         if (maxScroll > 0) {
             int trackHeight = LIST_BOTTOM - LIST_TOP;
-            int thumbHeight = Math.max(18, trackHeight * trackHeight /
-                    (trackHeight + maxScroll));
+            int thumbHeight = Math.max(18, trackHeight * trackHeight / (trackHeight + maxScroll));
             int thumbY = LIST_TOP + (trackHeight - thumbHeight) * scrollOffset / maxScroll;
             graphics.fill(centerX + 174, LIST_TOP, centerX + 178, LIST_BOTTOM, 0x33000000);
-            graphics.fill(centerX + 174, thumbY, centerX + 178, thumbY + thumbHeight, 0xFFAAAAAA);
+            graphics.fill(centerX + 174, thumbY, centerX + 178, thumbY + thumbHeight, 0xFF55FFFF);
+        }
+
+        if (feedbackMessage != null && System.currentTimeMillis() < feedbackUntil) {
+            int y = height - 68;
+            graphics.text(font, feedbackMessage, centerX - font.width(feedbackMessage) / 2, y, feedbackColor, true);
+        } else if (feedbackMessage != null) {
+            feedbackMessage = null;
         }
     }
 
@@ -139,7 +175,8 @@ public class NetflaredSettingsScreen extends Screen {
         }
 
         void addWidgets() {
-            nameBox = new EditBox(font, centerX - 170, y, 80, 18, Component.literal("Name"));
+            nameBox = new EditBox(font, centerX - 170, y, 80, 18,
+                    Component.translatable("netflared.settings.name"));
             nameBox.setValue(profile.name);
             nameBox.setMaxLength(64);
             nameBox.setResponder(s -> profile.name = s.trim());

@@ -113,9 +113,17 @@ public class NetflaredConfig {
     public void addProfile() {
         int n = 1;
         String name;
-        do {
+        while (true) {
             name = "Netflared Server " + n++;
-        } while (profiles.stream().anyMatch(p -> p != null && name.equals(p.name)));
+            boolean used = false;
+            for (Profile profile : profiles) {
+                if (profile != null && name.equals(profile.name)) {
+                    used = true;
+                    break;
+                }
+            }
+            if (!used) break;
+        }
         profiles.add(new Profile(name, "", 25565));
     }
 

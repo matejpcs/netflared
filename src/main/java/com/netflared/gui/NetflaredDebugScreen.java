@@ -1,5 +1,6 @@
 package com.netflared.gui;
 
+import com.netflared.NetflaredMod;
 import com.netflared.config.NetflaredConfig;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
@@ -26,25 +27,25 @@ public class NetflaredDebugScreen extends Screen {
         int top = height / 2 - 55;
 
         addRenderableWidget(Button.builder(
-                Component.translatable("netflared.debug.working"),
+                NetflaredMod.tr("netflared.debug.working"),
                 btn -> openStatus(NetflaredStatusScreen.State.WORKING,
-                        Component.translatable("netflared.debug.working_message")))
+                        NetflaredMod.tr("netflared.debug.working_message")))
                 .bounds(centerX - 100, top, 200, 20).build());
 
         addRenderableWidget(Button.builder(
-                Component.translatable("netflared.debug.success"),
+                NetflaredMod.tr("netflared.debug.success"),
                 btn -> openStatus(NetflaredStatusScreen.State.SUCCESS,
-                        Component.translatable("netflared.debug.success_message")))
+                        NetflaredMod.tr("netflared.debug.success_message")))
                 .bounds(centerX - 100, top + 25, 200, 20).build());
 
         addRenderableWidget(Button.builder(
-                Component.translatable("netflared.debug.error"),
+                NetflaredMod.tr("netflared.debug.error"),
                 btn -> openStatus(NetflaredStatusScreen.State.ERROR,
-                        Component.translatable("netflared.debug.error_message")))
+                        NetflaredMod.tr("netflared.debug.error_message")))
                 .bounds(centerX - 100, top + 50, 200, 20).build());
 
         addRenderableWidget(Button.builder(
-                Component.translatable("netflared.debug.settings"),
+                NetflaredMod.tr("netflared.debug.settings"),
                 btn -> minecraft.gui.setScreen(new NetflaredSettingsScreen(this)))
                 .bounds(centerX - 100, top + 75, 200, 20).build());
 
@@ -68,7 +69,7 @@ public class NetflaredDebugScreen extends Screen {
         int titleY = height / 2 - 85;
         graphics.text(font, title, centerX - font.width(title) / 2, titleY, 0xFFFFD166, true);
 
-        Component subtitle = Component.translatable("netflared.debug.subtitle");
+        Component subtitle = NetflaredMod.tr("netflared.debug.subtitle");
         graphics.text(font, subtitle, centerX - font.width(subtitle) / 2,
                 titleY + 18, 0xFFAAAAAA, false);
     }

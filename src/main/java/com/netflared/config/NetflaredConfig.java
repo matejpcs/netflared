@@ -20,7 +20,7 @@ public class NetflaredConfig {
     private boolean setupComplete;
 
     public static class Profile {
-        public String name = "Netflared Server";
+        public String name = "Server";
         public String domain = "";
         public int port = 25565;
         public transient boolean running;
@@ -55,7 +55,7 @@ public class NetflaredConfig {
         }
 
         if (cfg.profiles.isEmpty()) {
-            cfg.profiles.add(new Profile("Netflared Server 1", "", 25565));
+            cfg.profiles.add(new Profile("Server 1", "", 25565));
         }
         return cfg;
     }
@@ -86,7 +86,7 @@ public class NetflaredConfig {
         profiles.removeIf(profile -> profile == null);
         for (Profile profile : profiles) {
             profile.name = profile.name == null || profile.name.isBlank()
-                    ? "Netflared Server" : profile.name.trim();
+                    ? "Server" : profile.name.trim();
             profile.domain = profile.domain == null ? "" : profile.domain.trim();
             if (profile.port < 1 || profile.port > 65535) profile.port = 25565;
             profile.running = false;
@@ -114,7 +114,7 @@ public class NetflaredConfig {
         int n = 1;
         String name;
         while (true) {
-            name = "Netflared Server " + n++;
+            name = "Server " + n++;
             boolean used = false;
             for (Profile profile : profiles) {
                 if (profile != null && name.equals(profile.name)) {

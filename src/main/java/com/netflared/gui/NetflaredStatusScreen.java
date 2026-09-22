@@ -37,10 +37,12 @@ public class NetflaredStatusScreen extends Screen {
             if (backButton != null) {
                 backButton.visible = newState != State.WORKING;
                 backButton.active = newState != State.WORKING;
+                backButton.setX(newState == State.SUCCESS ? width / 2 - 105 : width / 2 - 50);
             }
             if (joinButton != null) {
                 joinButton.visible = newState == State.SUCCESS;
                 joinButton.active = newState == State.SUCCESS;
+                joinButton.setX(width / 2 + 5);
             }
             if (cancelButton != null) {
                 cancelButton.visible = newState == State.WORKING;
@@ -100,6 +102,9 @@ public class NetflaredStatusScreen extends Screen {
                 .bounds(centerX - 50, centerY + 50, 100, 20).build();
         backButton.visible = state != State.WORKING;
         backButton.active = state != State.WORKING;
+        if (state == State.SUCCESS) {
+            backButton.setX(centerX - 105);
+        }
         addRenderableWidget(backButton);
 
         joinButton = Button.builder(

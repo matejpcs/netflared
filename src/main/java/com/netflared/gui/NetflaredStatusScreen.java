@@ -24,7 +24,7 @@ public class NetflaredStatusScreen extends Screen {
     private Button cancelButton;
 
     public NetflaredStatusScreen(Screen parent, NetflaredConfig.Profile profile) {
-        super(Component.translatable("netflared.status.title", profile.domain));
+        super(NetflaredMod.tr("netflared.status.title", profile.domain));
         this.parent = parent;
         this.profile = profile;
     }

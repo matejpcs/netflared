@@ -19,8 +19,7 @@ public class NetflaredStatusScreen extends Screen {
     private final NetflaredConfig.Profile profile;
     private volatile State state = State.WORKING;
     private volatile String message = "Preparing...";
-
-    private Button okButton;
+    private Button backButton;
     private Button joinButton;
     private Button cancelButton;
 
@@ -35,17 +34,17 @@ public class NetflaredStatusScreen extends Screen {
         state = newState;
         Minecraft client = Minecraft.getInstance();
         client.execute(() -> {
-            if (okButton != null) {
-                okButton.visible = newState != State.WORKING;
-                okButton.active = newState != State.WORKING;
+            if (backButton != null) {
+                backButton.visible = newState != State.WORKING;
+                backButton.active = newState != State.WORKING;
             }
             if (joinButton != null) {
                 joinButton.visible = newState == State.SUCCESS;
                 joinButton.active = newState == State.SUCCESS;
             }
             if (cancelButton != null) {
-                cancelButton.visible = newState == State.WORKING || newState == State.SUCCESS;
-                cancelButton.active = cancelButton.visible;
+                cancelButton.visible = newState == State.WORKING;
+                cancelButton.active = newState == State.WORKING;
             }
         });
     }
@@ -55,22 +54,34 @@ public class NetflaredStatusScreen extends Screen {
             try {
                 var manager = NetflaredMod.getTunnelManager();
                 if (!manager.isBinaryReady()) {
-                    updateStatus("Downloading binary...", State.WORKING);
+                    updateStatus(
+                            Component.translatable("netflared.status.downloading").getString(),
+                            State.WORKING);
                     manager.ensureBinary();
                 }
 
-                updateStatus("Establishing tunnel...", State.WORKING);
+                updateStatus(
+                        Component.translatable("netflared.status.connecting").getString(),
+                        State.WORKING);
                 Process process = manager.startTunnel(profile);
                 Thread.sleep(1500);
 
                 if (process.isAlive()) {
-                    updateStatus("Successfully connected", State.SUCCESS);
+                    updateStatus(
+                            Component.translatable("netflared.status.ready").getString(),
+                            State.SUCCESS);
                 } else {
-                    updateStatus("cloudflared exited unexpectedly", State.ERROR);
+                    updateStatus(
+                            Component.translatable("netflared.status.exited").getString(),
+                            State.ERROR);
                 }
             } catch (Exception e) {
                 NetflaredMod.LOGGER.error("[Netflared] Tunnel failed for {}", profile.domain, e);
-                updateStatus("Error: " + (e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage()),
+                String detail = e.getMessage() == null
+                        ? e.getClass().getSimpleName()
+                        : e.getMessage();
+                updateStatus(
+                        Component.translatable("netflared.status.error_detail", detail).getString(),
                         State.ERROR);
             }
         }, "netflared-tunnel-setup");
@@ -83,13 +94,13 @@ public class NetflaredStatusScreen extends Screen {
         int centerX = width / 2;
         int centerY = height / 2;
 
-        okButton = Button.builder(
-                Component.literal("OK"),
+        backButton = Button.builder(
+                Component.translatable("netflared.status.back"),
                 btn -> minecraft.gui.setScreen(parent))
                 .bounds(centerX - 105, centerY + 50, 100, 20).build();
-        okButton.visible = state != State.WORKING;
-        okButton.active = state != State.WORKING;
-        addRenderableWidget(okButton);
+        backButton.visible = state != State.WORKING;
+        backButton.active = state != State.WORKING;
+        addRenderableWidget(backButton);
 
         joinButton = Button.builder(
                 Component.translatable("netflared.status.join"),
@@ -107,14 +118,13 @@ public class NetflaredStatusScreen extends Screen {
         cancelButton = Button.builder(
                 Component.translatable("netflared.status.cancel"),
                 btn -> {
-                    if (state == State.WORKING || state == State.SUCCESS) {
-                        NetflaredMod.getTunnelManager().stopTunnel(profile.domain);
-                        profile.running = false;
-                    }
+                    NetflaredMod.getTunnelManager().stopTunnel(profile.domain);
+                    profile.running = false;
                     minecraft.gui.setScreen(parent);
                 })
                 .bounds(centerX - 50, centerY + 75, 100, 20).build();
-        cancelButton.visible = state == State.WORKING || state == State.SUCCESS;
+        cancelButton.visible = state == State.WORKING;
+        cancelButton.active = state == State.WORKING;
         addRenderableWidget(cancelButton);
     }
 
@@ -124,24 +134,34 @@ public class NetflaredStatusScreen extends Screen {
 
         int centerX = width / 2;
         int centerY = height / 2;
-        String title = switch (state) {
-            case WORKING -> "Setting up tunnel...";
-            case SUCCESS -> "Successfully connected";
-            case ERROR -> "Tunnel setup failed";
+        Component heading = switch (state) {
+            case WORKING -> Component.translatable("netflared.status.working");
+            case SUCCESS -> Component.translatable("netflared.status.connected");
+            case ERROR -> Component.translatable("netflared.status.failed");
         };
 
-        drawCentered(graphics, title, centerX, centerY - 30);
-        drawCentered(graphics, message, centerX, centerY - 10);
+        int headingColor = switch (state) {
+            case WORKING -> 0xFF63D7FF;
+            case SUCCESS -> 0xFF55FF88;
+            case ERROR -> 0xFFFF6666;
+        };
+
+        drawCentered(graphics, heading, centerX, centerY - 34, headingColor, true);
+        drawCentered(graphics, Component.literal(message), centerX, centerY - 12, 0xFFE8E8E8, false);
 
         if (state == State.SUCCESS) {
-            drawCentered(graphics, "Local: " + profile.getJoinAddress(), centerX, centerY + 10);
-            drawCentered(graphics, "Domain: " + profile.domain, centerX, centerY + 25);
+            drawCentered(graphics,
+                    Component.translatable("netflared.status.local", profile.getJoinAddress()),
+                    centerX, centerY + 12, 0xFF63D7FF, false);
+            drawCentered(graphics,
+                    Component.translatable("netflared.status.domain", profile.domain),
+                    centerX, centerY + 27, 0xFFB8A1FF, false);
         }
     }
 
-    private void drawCentered(GuiGraphicsExtractor graphics, String text, int centerX, int y) {
-        int x = centerX - font.width(text) / 2;
-        graphics.text(font, text, x, y, 0xFFFFFFFF, true);
+    private void drawCentered(GuiGraphicsExtractor graphics, Component text,
+                              int centerX, int y, int color, boolean shadow) {
+        graphics.text(font, text, centerX - font.width(text) / 2, y, color, shadow);
     }
 
     @Override

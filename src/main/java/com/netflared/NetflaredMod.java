@@ -62,7 +62,7 @@ public class NetflaredMod implements ClientModInitializer {
         private static final Map<String, String> values = new HashMap<>();
         private static volatile String loadedLocale = "en_us";
         private static volatile String lastRequestedLocale;
-        String[][] defaults = {
+        private static final String[][] defaults = {
                 {"netflared.settings.title", "Netflared Settings"},
                 {"netflared.settings.name", "Name"},
                 {"netflared.settings.domain", "Tunnel Domain"},

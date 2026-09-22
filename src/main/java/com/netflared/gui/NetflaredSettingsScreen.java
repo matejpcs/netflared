@@ -6,6 +6,7 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.network.chat.Component;
 
 import java.util.ArrayList;
@@ -57,7 +58,7 @@ public class NetflaredSettingsScreen extends Screen {
         addRenderableWidget(Button.builder(
                 Component.translatable("netflared.settings.save"),
                 btn -> {
-                    cfg.save(NetflaredMod.getInstance() == null ? null : null);
+                    cfg.save(FabricLoader.getInstance().getConfigDir().resolve(NetflaredMod.MOD_ID));
                     minecraft.gui.setScreen(parent);
                 }).bounds(centerX - 50, height - 52, 100, 20).build());
 
@@ -165,7 +166,7 @@ public class NetflaredSettingsScreen extends Screen {
 
             connectBtn = Button.builder(
                     Component.translatable(NetflaredMod.getTunnelManager().isTunnelRunning(profile.domain)
-                            ? "netflared.status.disconnect" : "netflared.status.connecting"),
+                            ? "netflared.status.disconnect" : "netflared.status.connect"),
                     btn -> toggleTunnel(btn))
                     .bounds(centerX + 115, y, 75, 18).build();
             addRenderableWidget(connectBtn);

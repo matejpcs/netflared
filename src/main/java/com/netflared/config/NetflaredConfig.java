@@ -83,8 +83,8 @@ public class NetflaredConfig {
     }
 
     private void normalize() {
+        profiles.removeIf(profile -> profile == null);
         for (Profile profile : profiles) {
-            if (profile == null) continue;
             profile.name = profile.name == null || profile.name.isBlank()
                     ? "Netflared Server" : profile.name.trim();
             profile.domain = profile.domain == null ? "" : profile.domain.trim();

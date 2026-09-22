@@ -16,7 +16,7 @@ public class NetflaredDebugScreen extends Screen {
             new NetflaredConfig.Profile("Debug Server", "debug.example.com", 25565);
 
     public NetflaredDebugScreen(Screen parent) {
-        super(Component.translatable("netflared.debug.title"));
+        super(NetflaredMod.tr("netflared.debug.title"));
         this.parent = parent;
     }
 
@@ -49,7 +49,7 @@ public class NetflaredDebugScreen extends Screen {
                 .bounds(centerX - 100, top + 75, 200, 20).build());
 
         addRenderableWidget(Button.builder(
-                Component.translatable("netflared.settings.back"),
+                NetflaredMod.tr("netflared.settings.back"),
                 btn -> minecraft.gui.setScreen(parent))
                 .bounds(centerX - 100, top + 105, 200, 20).build());
     }

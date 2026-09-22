@@ -11,113 +11,110 @@ import net.minecraft.network.chat.Component;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Main configuration screen for Netflared.
- *
- * <p>Shows a scrollable list of tunnel profiles. Each profile has:
- * domain input, local port input, Connect/Disconnect button, and a
- * remove button. A "+ Add Server" button appends new profiles.</p>
- *
- * <p>On save, all profiles are synced into the vanilla multiplayer
- * server list as "Netflared Server N" (editable by the player).</p>
- */
+/** Main configuration screen for Netflared tunnel profiles. */
 public class NetflaredSettingsScreen extends Screen {
-
     private final Screen parent;
     private final List<ProfileWidget> profileWidgets = new ArrayList<>();
-    private EditBox dummy; // keeps focus handling sane
-
-    private int scrollOffset = 0;
-    private static final int ROW_HEIGHT = 26;
+    private int scrollOffset;
+    private static final int ROW_HEIGHT = 28;
+    private static final int LIST_TOP = 42;
+    private static final int LIST_BOTTOM = 130;
 
     public NetflaredSettingsScreen(Screen parent) {
-        super(Component.literal("Netflared Settings"));
+        super(Component.translatable("netflared.settings.title"));
         this.parent = parent;
     }
 
     @Override
     protected void init() {
+        rebuildWidgets();
+    }
+
+    private void rebuildWidgets() {
+        clearWidgets();
         profileWidgets.clear();
 
         NetflaredConfig cfg = NetflaredMod.getConfig();
-        int centerX = this.width / 2;
-        int top = 40;
+        int centerX = width / 2;
+        int maxScroll = Math.max(0, cfg.getProfiles().size() * ROW_HEIGHT - (LIST_BOTTOM - LIST_TOP));
+        scrollOffset = Math.min(scrollOffset, maxScroll);
 
-        // Build one row of widgets per profile.
         for (int i = 0; i < cfg.getProfiles().size(); i++) {
-            NetflaredConfig.Profile profile = cfg.getProfiles().get(i);
-            ProfileWidget pw = new ProfileWidget(i, profile, centerX, top + i * ROW_HEIGHT);
-            profileWidgets.add(pw);
-            pw.addWidgets();
+            int y = LIST_TOP + i * ROW_HEIGHT - scrollOffset;
+            ProfileWidget widget = new ProfileWidget(i, cfg.getProfiles().get(i), centerX, y);
+            profileWidgets.add(widget);
+            widget.addWidgets();
         }
 
-        // "+ Add Server" button — always at the bottom.
-        int listBottom = top + Math.max(1, profileWidgets.size()) * ROW_HEIGHT;
-        this.addRenderableWidget(Button.builder(
-                        Component.literal("+ Add Server"),
-                        btn -> {
-                            cfg.addProfile();
-                            this.rebuildWidgets();
-                        })
-                .bounds(centerX - 100, listBottom + 10, 90, 20)
-                .build());
+        addRenderableWidget(Button.builder(
+                Component.translatable("netflared.settings.add"),
+                btn -> {
+                    cfg.addProfile();
+                    scrollOffset = Integer.MAX_VALUE;
+                    rebuildWidgets();
+                }).bounds(centerX - 155, height - 52, 100, 20).build());
 
-        // Save & Sync button.
-        this.addRenderableWidget(Button.builder(
-                        Component.literal("Save & Sync"),
-                        btn -> {
-                            cfg.save(NetflaredMod.getInstance() != null
-                                    ? this.minecraft.gameDirectory.toPath().resolve("config").resolve("netflared")
-                                    : null);
-                            this.minecraft.gui.setScreen(parent);
-                        })
-                .bounds(centerX - 100, listBottom + 35, 90, 20)
-                .build());
+        addRenderableWidget(Button.builder(
+                Component.translatable("netflared.settings.save"),
+                btn -> {
+                    cfg.save(NetflaredMod.getInstance() == null ? null : null);
+                    minecraft.gui.setScreen(parent);
+                }).bounds(centerX - 50, height - 52, 100, 20).build());
 
-        // Cancel button.
-        this.addRenderableWidget(Button.builder(
-                        Component.literal("Cancel"),
-                        btn -> this.minecraft.gui.setScreen(parent))
-                .bounds(centerX + 10, listBottom + 35, 90, 20)
-                .build());
+        addRenderableWidget(Button.builder(
+                Component.translatable("netflared.settings.cancel"),
+                btn -> minecraft.gui.setScreen(parent))
+                .bounds(centerX + 55, height - 52, 100, 20).build());
 
-        // Back button.
-        this.addRenderableWidget(Button.builder(
-                        Component.literal("Back"),
-                        btn -> this.minecraft.gui.setScreen(parent))
-                .bounds(centerX - 50, this.height - 30, 100, 20)
-                .build());
+        addRenderableWidget(Button.builder(
+                Component.translatable("netflared.settings.back"),
+                btn -> minecraft.gui.setScreen(parent))
+                .bounds(centerX - 50, height - 25, 100, 20).build());
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double deltaX, double deltaY) {
+        if (mouseY >= LIST_TOP && mouseY <= LIST_BOTTOM) {
+            int maxScroll = Math.max(0,
+                    NetflaredMod.getConfig().getProfiles().size() * ROW_HEIGHT - (LIST_BOTTOM - LIST_TOP));
+            scrollOffset = (int) Math.max(0, Math.min(maxScroll, scrollOffset - deltaY * ROW_HEIGHT));
+            rebuildWidgets();
+            return true;
+        }
+        return super.mouseScrolled(mouseX, mouseY, deltaX, deltaY);
     }
 
     @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
         super.extractRenderState(graphics, mouseX, mouseY, delta);
 
-        int centerX = this.width / 2;
+        int centerX = width / 2;
+        graphics.text(font, title, centerX - font.width(title) / 2, 15, 0xFFFFFFFF, true);
+        graphics.text(font, Component.translatable("netflared.settings.name"), centerX - 170, 31, 0xFFAAAAAA, false);
+        graphics.text(font, Component.translatable("netflared.settings.domain"), centerX - 85, 31, 0xFFAAAAAA, false);
+        graphics.text(font, Component.translatable("netflared.settings.port"), centerX + 55, 31, 0xFFAAAAAA, false);
 
-        // Title
-        graphics.text(this.font, "Netflared Settings", centerX - this.font.width("Netflared Settings") / 2, 15, 0xFFFFFFFF, true);
-
-        // Column headers
-        int top = 28;
-        graphics.text(this.font, "Name",   centerX - 160, top, 0xFFAAAAAA, false);
-        graphics.text(this.font, "Domain", centerX - 90,  top, 0xFFAAAAAA, false);
-        graphics.text(this.font, "Port",   centerX + 60,  top, 0xFFAAAAAA, false);
-
-        // Profile rows
         for (ProfileWidget pw : profileWidgets) {
-            pw.render(graphics, mouseX, mouseY, delta);
+            int bg = (pw.index % 2 == 0) ? 0x22000000 : 0x11000000;
+            graphics.fill(centerX - 175, pw.y - 3, centerX + 175, pw.y + 21, bg);
+        }
+
+        int maxScroll = Math.max(0,
+                NetflaredMod.getConfig().getProfiles().size() * ROW_HEIGHT - (LIST_BOTTOM - LIST_TOP));
+        if (maxScroll > 0) {
+            int trackHeight = LIST_BOTTOM - LIST_TOP;
+            int thumbHeight = Math.max(18, trackHeight * trackHeight /
+                    (trackHeight + maxScroll));
+            int thumbY = LIST_TOP + (trackHeight - thumbHeight) * scrollOffset / maxScroll;
+            graphics.fill(centerX + 174, LIST_TOP, centerX + 178, LIST_BOTTOM, 0x33000000);
+            graphics.fill(centerX + 174, thumbY, centerX + 178, thumbY + thumbHeight, 0xFFAAAAAA);
         }
     }
 
     @Override
     public void onClose() {
-        this.minecraft.gui.setScreen(parent);
+        minecraft.gui.setScreen(parent);
     }
-
-    // ------------------------------------------------------------------
-    // Inner widget holder for one profile row
-    // ------------------------------------------------------------------
 
     private class ProfileWidget {
         final int index;
@@ -138,68 +135,67 @@ public class NetflaredSettingsScreen extends Screen {
         }
 
         void addWidgets() {
-            nameBox = new EditBox(NetflaredSettingsScreen.this.font, centerX - 160, y, 80, 18,
-                    Component.literal("Name"));
+            nameBox = new EditBox(font, centerX - 170, y, 80, 18, Component.literal("Name"));
             nameBox.setValue(profile.name);
-            nameBox.setResponder(s -> profile.name = s);
-            NetflaredSettingsScreen.this.addRenderableWidget(nameBox);
+            nameBox.setMaxLength(64);
+            nameBox.setResponder(s -> profile.name = s.trim());
+            addRenderableWidget(nameBox);
 
-            domainBox = new EditBox(NetflaredSettingsScreen.this.font, centerX - 75, y, 130, 18,
-                    Component.literal("play.example.com"));
+            domainBox = new EditBox(font, centerX - 85, y, 130, 18,
+                    Component.translatable("netflared.settings.domain"));
             domainBox.setValue(profile.domain);
-            domainBox.setResponder(s -> profile.domain = s);
-            NetflaredSettingsScreen.this.addRenderableWidget(domainBox);
+            domainBox.setMaxLength(253);
+            domainBox.setResponder(s -> profile.domain = s.trim());
+            addRenderableWidget(domainBox);
 
-            portBox = new EditBox(NetflaredSettingsScreen.this.font, centerX + 60, y, 50, 18,
-                    Component.literal("25565"));
-            portBox.setValue(String.valueOf(profile.port));
+            portBox = new EditBox(font, centerX + 55, y, 55, 18,
+                    Component.translatable("netflared.settings.port"));
+            portBox.setValue(Integer.toString(profile.port));
+            portBox.setMaxLength(5);
             portBox.setResponder(s -> {
-                try {
-                    profile.port = Integer.parseInt(s.trim());
-                } catch (NumberFormatException ignored) { /* keep last valid */ }
+                if (s.matches("\\d{1,5}")) {
+                    try {
+                        int port = Integer.parseInt(s);
+                        if (port >= 1 && port <= 65535) profile.port = port;
+                    } catch (NumberFormatException ignored) {
+                    }
+                }
             });
-            NetflaredSettingsScreen.this.addRenderableWidget(portBox);
+            addRenderableWidget(portBox);
 
-            // Connect / Disconnect toggle.
             connectBtn = Button.builder(
-                            Component.literal(NetflaredMod.getTunnelManager().isTunnelRunning(profile.domain)
-                                    ? "Disconnect" : "Connect"),
-                            btn -> {
-                                var tm = NetflaredMod.getTunnelManager();
-                                if (tm.isTunnelRunning(profile.domain)) {
-                                    tm.stopTunnel(profile.domain);
-                                    profile.running = false;
-                                    btn.setMessage(Component.literal("Connect"));
-                                } else {
-                                    // Show status screen and connect in background.
-                                    NetflaredStatusScreen status = new NetflaredStatusScreen(
-                                            NetflaredSettingsScreen.this, profile);
-                                    NetflaredSettingsScreen.this.minecraft.gui.setScreen(status);
-                                    status.connect();
-                                    btn.setMessage(Component.literal("Disconnect"));
-                                }
-                            })
-                    .bounds(centerX + 115, y, 70, 18)
-                    .build();
-            NetflaredSettingsScreen.this.addRenderableWidget(connectBtn);
+                    Component.translatable(NetflaredMod.getTunnelManager().isTunnelRunning(profile.domain)
+                            ? "netflared.status.disconnect" : "netflared.status.connecting"),
+                    btn -> toggleTunnel(btn))
+                    .bounds(centerX + 115, y, 75, 18).build();
+            addRenderableWidget(connectBtn);
 
-            // Remove button (only if more than one profile).
-            removeBtn = Button.builder(
-                            Component.literal("X"),
-                            btn -> {
-                                NetflaredMod.getConfig().removeProfile(index);
-                                NetflaredSettingsScreen.this.rebuildWidgets();
-                            })
-                    .bounds(centerX + 190, y, 18, 18)
-                    .build();
+            removeBtn = Button.builder(Component.literal("×"), btn -> {
+                if (NetflaredMod.getTunnelManager().isTunnelRunning(profile.domain)) {
+                    NetflaredMod.getTunnelManager().stopTunnel(profile.domain);
+                }
+                NetflaredMod.getConfig().removeProfile(index);
+                rebuildWidgets();
+            }).bounds(centerX + 195, y, 18, 18).build();
             removeBtn.active = NetflaredMod.getConfig().getProfiles().size() > 1;
-            NetflaredSettingsScreen.this.addRenderableWidget(removeBtn);
+            addRenderableWidget(removeBtn);
+
+            boolean visible = y + ROW_HEIGHT > LIST_TOP && y < LIST_BOTTOM;
+            nameBox.active = domainBox.active = portBox.active = connectBtn.active = removeBtn.active = visible;
         }
 
-        void render(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
-            // Row background stripe for readability.
-            int bg = (index % 2 == 0) ? 0x22000000 : 0x11000000;
-            graphics.fill(centerX - 170, y - 2, centerX + 215, y + 20, bg);
+        private void toggleTunnel(Button btn) {
+            var tm = NetflaredMod.getTunnelManager();
+            if (tm.isTunnelRunning(profile.domain)) {
+                tm.stopTunnel(profile.domain);
+                profile.running = false;
+                btn.setMessage(Component.translatable("netflared.status.connect"));
+                return;
+            }
+
+            NetflaredStatusScreen status = new NetflaredStatusScreen(NetflaredSettingsScreen.this, profile);
+            minecraft.gui.setScreen(status);
+            status.connect();
         }
     }
 }

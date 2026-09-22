@@ -4,7 +4,7 @@
   "netflared.settings.domain": "Tunelaren domeinua",
   "netflared.settings.port": "Tokiko ataka",
   "netflared.settings.add": "+ Gehitu zerbitzaria",
-  "netflared.settings.save": "Gorde eta sinkronizatu",
+  "netflared.settings.save": "Gorde",
   "netflared.settings.saved": "Ezarpenak gorde dira",
   "netflared.settings.save_failed": "Ezin izan dira ezarpenak gorde",
   "netflared.settings.cancel": "Utzi",

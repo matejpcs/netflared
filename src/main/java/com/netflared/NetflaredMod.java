@@ -18,6 +18,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
+import java.nio.file.Files;
+import java.nio.charset.StandardCharsets;
+import java.net.HttpURLConnection;
+import java.net.URI;
+import java.util.HashMap;
+import java.util.Map;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 public class NetflaredMod implements ClientModInitializer {
 
@@ -41,6 +50,122 @@ public class NetflaredMod implements ClientModInitializer {
     public static NetflaredMod getInstance() { return INSTANCE; }
     public static NetflaredConfig getConfig() { return config; }
     public static TunnelManager getTunnelManager() { return tunnelManager; }
+
+    /**
+     * Downloads editable Netflared translations from the dedicated lang branch and
+     * keeps a local copy under config/netflared/lang. The GUI reads this cache so
+     * language changes can be shipped independently of the mod jar.
+     */
+    public static final class Translations {
+        private static final String LANG_BRANCH =
+                "https://raw.githubusercontent.com/matejpcs/netflared/lang/src/main/resources/assets/netflared/lang/";
+        private static final Map<String, String> values = new HashMap<>();
+        private static volatile String loadedLocale = "en_us";
+        private static volatile boolean refreshStarted;
+
+        public static synchronized void refresh() {
+            if (refreshStarted) return;
+            refreshStarted = true;
+
+            String locale = "en_us";
+            try {
+                if (MinecraftHolder.client() != null) {
+                    locale = MinecraftHolder.client().getLanguageManager().getSelected();
+                }
+            } catch (Throwable ignored) {}
+
+            loadedLocale = locale;
+            final String selected = locale;
+            Thread thread = new Thread(() -> {
+                try {
+                    Path langDir = FabricLoader.getInstance().getConfigDir()
+                            .resolve(MOD_ID).resolve("lang");
+                    Files.createDirectories(langDir);
+
+                    Path selectedFile = langDir.resolve(selected + ".json");
+                    Path englishFile = langDir.resolve("en_us.json");
+
+                    downloadIfChanged(selectedFile, selected);
+                    if (!"en_us".equals(selected)) downloadIfChanged(englishFile, "en_us");
+
+                    loadFile(englishFile);
+                    if (!"en_us".equals(selected)) loadFile(selectedFile);
+
+                    LOGGER.info("[Netflared] Loaded dynamic language {}", selected);
+                } catch (Exception e) {
+                    LOGGER.warn("[Netflared] Dynamic language sync failed; using bundled/default text", e);
+                }
+            }, "netflared-language-sync");
+            thread.setDaemon(true);
+            thread.start();
+        }
+
+        public static String text(String key, Object... args) {
+            String value = values.getOrDefault(key, key);
+            if (args.length > 0) {
+                try {
+                    return String.format(value, args);
+                } catch (Exception ignored) {}
+            }
+            return value;
+        }
+
+        private static void downloadIfChanged(Path target, String locale) throws Exception {
+            HttpURLConnection connection = (HttpURLConnection)
+                    URI.create(LANG_BRANCH + locale + ".json").toURL().openConnection();
+            connection.setConnectTimeout(5000);
+            connection.setReadTimeout(10000);
+            connection.setRequestProperty("User-Agent", "Netflared/" + MOD_ID);
+            connection.setRequestProperty("Accept", "application/json");
+            int status = connection.getResponseCode();
+            if (status < 200 || status >= 300) {
+                connection.disconnect();
+                return;
+            }
+
+            byte[] data = connection.getInputStream().readAllBytes();
+            connection.disconnect();
+            if (data.length == 0) return;
+
+            Path temp = target.resolveSibling(target.getFileName() + ".part");
+            Files.write(temp, data);
+            try {
+                Files.move(temp, target, java.nio.file.StandardCopyOption.REPLACE_EXISTING,
+                        java.nio.file.StandardCopyOption.ATOMIC_MOVE);
+            } catch (java.nio.file.AtomicMoveNotSupportedException e) {
+                Files.move(temp, target, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            }
+        }
+
+        private static synchronized void loadFile(Path file) {
+            if (!Files.isRegularFile(file)) return;
+            try {
+                JsonObject object = JsonParser.parseString(
+                        Files.readString(file, StandardCharsets.UTF_8)).getAsJsonObject();
+                for (Map.Entry<String, JsonElement> entry : object.entrySet()) {
+                    if (entry.getValue().isJsonPrimitive()) {
+                        values.put(entry.getKey(), entry.getValue().getAsString());
+                    }
+                }
+            } catch (Exception e) {
+                LOGGER.warn("[Netflared] Invalid language file {}", file, e);
+            }
+        }
+    }
+
+    private static final class MinecraftHolder {
+        static net.minecraft.client.Minecraft client() {
+            return net.minecraft.client.Minecraft.getInstance();
+        }
+    }
+
+    public static void refreshTranslations() {
+        Translations.refresh();
+    }
+
+    public static net.minecraft.network.chat.Component tr(String key, Object... args) {
+        return net.minecraft.network.chat.Component.literal(Translations.text(key, args));
+    }
 
     @Override
     public void onInitializeClient() {

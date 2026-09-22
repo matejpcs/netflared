@@ -71,9 +71,11 @@ public class TunnelManager {
                 extractTarGz(temporary, binDir);
                 Files.deleteIfExists(temporary);
             } else {
-                Files.move(temporary, binary,
-                        StandardCopyOption.REPLACE_EXISTING,
-                        StandardCopyOption.ATOMIC_MOVE);
+                try {
+                    Files.move(temporary, binary, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+                } catch (java.nio.file.AtomicMoveNotSupportedException e) {
+                    Files.move(temporary, binary, StandardCopyOption.REPLACE_EXISTING);
+                }
             }
 
             if (!Files.isRegularFile(binary) || Files.size(binary) == 0) {
@@ -291,7 +293,7 @@ public class TunnelManager {
                 try { killTree(p.toHandle()); } catch (Throwable ignored) {}
             }
             try { Files.deleteIfExists(pidFileFor(entry.getKey())); } catch (IOException ignored) {}
-            entry.getValue();
+
         }
         activeTunnels.clear();
     }

@@ -4,7 +4,7 @@
   "netflared.settings.domain": "Tunneli domeen",
   "netflared.settings.port": "Kohalik port",
   "netflared.settings.add": "+ Lisa server",
-  "netflared.settings.save": "Salvesta ja sünkrooni",
+  "netflared.settings.save": "Salvesta",
   "netflared.settings.saved": "Seaded salvestatud",
   "netflared.settings.save_failed": "Seadete salvestamine ebaõnnestus",
   "netflared.settings.cancel": "Tühista",

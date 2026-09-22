@@ -4,7 +4,7 @@
   "netflared.settings.domain": "Tunneldomæne",
   "netflared.settings.port": "Lokal port",
   "netflared.settings.add": "+ Tilføj server",
-  "netflared.settings.save": "Gem og synkroniser",
+  "netflared.settings.save": "Gem",
   "netflared.settings.saved": "Indstillinger gemt",
   "netflared.settings.save_failed": "Kunne ikke gemme indstillinger",
   "netflared.settings.cancel": "Annuller",

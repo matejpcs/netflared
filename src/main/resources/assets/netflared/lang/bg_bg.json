@@ -4,7 +4,7 @@
   "netflared.settings.domain": "Домейн на тунела",
   "netflared.settings.port": "Локален порт",
   "netflared.settings.add": "+ Добавяне на сървър",
-  "netflared.settings.save": "Запазване и синхронизиране",
+  "netflared.settings.save": "Запази",
   "netflared.settings.saved": "Настройките са запазени",
   "netflared.settings.save_failed": "Настройките не могат да бъдат запазени",
   "netflared.settings.cancel": "Отказ",

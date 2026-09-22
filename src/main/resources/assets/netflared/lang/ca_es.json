@@ -4,7 +4,7 @@
   "netflared.settings.domain": "Domini del túnel",
   "netflared.settings.port": "Port local",
   "netflared.settings.add": "+ Afegeix un servidor",
-  "netflared.settings.save": "Desa i sincronitza",
+  "netflared.settings.save": "Desa",
   "netflared.settings.saved": "Configuració desada",
   "netflared.settings.save_failed": "No s’ha pogut desar la configuració",
   "netflared.settings.cancel": "Cancel·la",

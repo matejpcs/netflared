@@ -8,7 +8,7 @@
   "netflared.settings.add": "+ Add Server",
   "netflared.settings.save": "Save & Sync",
   "netflared.settings.cancel": "Cancel",
-  "netflared.status.idle": "Idle",\n  "netflared.status.connect": "Connect",
+  "netflared.status.title": "Netflared — %s",\n  "netflared.status.cancel": "Cancel",\n  "netflared.status.idle": "Idle",\n  "netflared.status.connect": "Connect",
   "netflared.status.downloading": "Downloading Binary...",
   "netflared.status.connecting": "Establishing Tunnel...",
   "netflared.status.connected": "Connected",

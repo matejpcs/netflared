@@ -101,12 +101,11 @@ public class NetflaredMod implements ClientModInitializer {
                 {"netflared.debug.success_message", "Debug state: tunnel ready"},
                 {"netflared.debug.error_message", "Debug state: simulated connection failure"}
         };
-        for (String[] entry : defaults) values.put(entry[0], entry[1]);
+        static {
+            for (String[] entry : defaults) values.put(entry[0], entry[1]);
+        }
 
         public static synchronized void refresh() {
-            if (refreshStarted) return;
-            refreshStarted = true;
-
             String locale = "en_us";
             try {
                 if (MinecraftHolder.client() != null) {

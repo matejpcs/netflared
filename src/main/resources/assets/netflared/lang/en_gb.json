@@ -25,5 +25,15 @@
   "netflared.status.cancel": "Cancel",
   "netflared.status.idle": "Idle",
   "netflared.status.connect": "Connect",
-  "netflared.status.disconnect": "Disconnect"
+  "netflared.status.disconnect": "Disconnect",
+  "netflared.debug.button": "Debug",
+  "netflared.debug.title": "Netflared Debug Tools",
+  "netflared.debug.subtitle": "Internal UI testing — no tunnel is started",
+  "netflared.debug.working": "Test Connecting",
+  "netflared.debug.success": "Test Connected",
+  "netflared.debug.error": "Test Error",
+  "netflared.debug.settings": "Test Settings",
+  "netflared.debug.working_message": "Waiting for tunnel...",
+  "netflared.debug.success_message": "Debug state: tunnel ready",
+  "netflared.debug.error_message": "Debug state: simulated connection failure"
 }

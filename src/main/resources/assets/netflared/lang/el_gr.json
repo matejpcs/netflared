@@ -4,7 +4,7 @@
   "netflared.settings.domain": "Τομέας σήραγγας",
   "netflared.settings.port": "Τοπική θύρα",
   "netflared.settings.add": "+ Προσθήκη διακομιστή",
-  "netflared.settings.save": "Αποθήκευση και συγχρονισμός",
+  "netflared.settings.save": "Αποθήκευση",
   "netflared.settings.saved": "Οι ρυθμίσεις αποθηκεύτηκαν",
   "netflared.settings.save_failed": "Δεν ήταν δυνατή η αποθήκευση των ρυθμίσεων",
   "netflared.settings.cancel": "Ακύρωση",

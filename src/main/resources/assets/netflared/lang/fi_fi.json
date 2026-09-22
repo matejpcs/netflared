@@ -4,7 +4,7 @@
   "netflared.settings.domain": "Tunnelin verkkotunnus",
   "netflared.settings.port": "Paikallinen portti",
   "netflared.settings.add": "+ Lisää palvelin",
-  "netflared.settings.save": "Tallenna ja synkronoi",
+  "netflared.settings.save": "Tallenna",
   "netflared.settings.saved": "Asetukset tallennettu",
   "netflared.settings.save_failed": "Asetusten tallentaminen epäonnistui",
   "netflared.settings.cancel": "Peruuta",

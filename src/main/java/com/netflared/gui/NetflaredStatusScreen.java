@@ -11,21 +11,12 @@ import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.multiplayer.resolver.ServerAddress;
 import net.minecraft.network.chat.Component;
 
-/**
- * Status / success overlay shown while a tunnel is being established, and
- * after it connects (offering a "Join" button that launches the player
- * directly into the configured server).
- *
- * <p>All tunnel startup happens on a background daemon thread; this screen
- * only reflects state and provides the join action.</p>
- */
+/** Status screen for starting, joining, or cancelling a Netflared tunnel. */
 public class NetflaredStatusScreen extends Screen {
-
     public enum State { WORKING, SUCCESS, ERROR }
 
     private final Screen parent;
     private final NetflaredConfig.Profile profile;
-
     private volatile State state = State.WORKING;
     private volatile String message = "Preparing...";
 
@@ -39,10 +30,9 @@ public class NetflaredStatusScreen extends Screen {
         this.profile = profile;
     }
 
-    /** Thread-safe status update callable from the background tunnel thread. */
     public void updateStatus(String msg, State newState) {
-        this.message = msg;
-        this.state = newState;
+        message = msg;
+        state = newState;
         Minecraft client = Minecraft.getInstance();
         client.execute(() -> {
             if (okButton != null) {
@@ -53,120 +43,109 @@ public class NetflaredStatusScreen extends Screen {
                 joinButton.visible = newState == State.SUCCESS;
                 joinButton.active = newState == State.SUCCESS;
             }
+            if (cancelButton != null) {
+                cancelButton.visible = newState == State.WORKING || newState == State.SUCCESS;
+                cancelButton.active = cancelButton.visible;
+            }
         });
     }
 
-    /**
-     * Kicks off the tunnel on a background thread. Safe to call immediately
-     * after switching to this screen.
-     */
     public void connect() {
-        Thread t = new Thread(() -> {
+        Thread thread = new Thread(() -> {
             try {
-                updateStatus("Downloading binary...", State.WORKING);
-                NetflaredMod.getTunnelManager().ensureBinary();
+                var manager = NetflaredMod.getTunnelManager();
+                if (!manager.isBinaryReady()) {
+                    updateStatus("Downloading binary...", State.WORKING);
+                    manager.ensureBinary();
+                }
 
                 updateStatus("Establishing tunnel...", State.WORKING);
-                Process p = NetflaredMod.getTunnelManager().startTunnel(profile);
-
-                // Give cloudflared a moment to bind the local port.
+                Process process = manager.startTunnel(profile);
                 Thread.sleep(1500);
 
-                if (p.isAlive()) {
+                if (process.isAlive()) {
                     updateStatus("Successfully connected", State.SUCCESS);
                 } else {
                     updateStatus("cloudflared exited unexpectedly", State.ERROR);
                 }
             } catch (Exception e) {
                 NetflaredMod.LOGGER.error("[Netflared] Tunnel failed for {}", profile.domain, e);
-                updateStatus("Error: " + e.getMessage(), State.ERROR);
+                updateStatus("Error: " + (e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage()),
+                        State.ERROR);
             }
         }, "netflared-tunnel-setup");
-        t.setDaemon(true);
-        t.start();
+        thread.setDaemon(true);
+        thread.start();
     }
 
     @Override
     protected void init() {
-        int centerX = this.width / 2;
-        int centerY = this.height / 2;
+        int centerX = width / 2;
+        int centerY = height / 2;
 
         okButton = Button.builder(
-                        Component.literal("OK"),
-                        btn -> this.minecraft.gui.setScreen(parent))
-                .bounds(centerX - 105, centerY + 50, 100, 20)
-                .build();
+                Component.literal("OK"),
+                btn -> minecraft.gui.setScreen(parent))
+                .bounds(centerX - 105, centerY + 50, 100, 20).build();
         okButton.visible = state != State.WORKING;
         okButton.active = state != State.WORKING;
-        this.addRenderableWidget(okButton);
+        addRenderableWidget(okButton);
 
         joinButton = Button.builder(
-                        Component.literal("Join"),
-                        btn -> {
-                            // Parse the "host:port" string into a ServerAddress.
-                            ServerAddress address = ServerAddress.parseString(
-                                    profile.getJoinAddress());
-
-                            ServerData data = new ServerData(
-                                    profile.name,
-                                    profile.getJoinAddress(),
-                                    ServerData.Type.OTHER);
-
-                            // MC 26.2 signature requires TransferState as the
-                            // final arg; null means "not a transfer, fresh join".
-                            ConnectScreen.startConnecting(
-                                    this,
-                                    this.minecraft,
-                                    address,
-                                    data,
-                                    false,
-                                    null);
-                        })
-                .bounds(centerX + 5, centerY + 50, 100, 20)
-                .build();
+                Component.translatable("netflared.status.join"),
+                btn -> {
+                    ServerAddress address = ServerAddress.parseString(profile.getJoinAddress());
+                    ServerData data = new ServerData(
+                            profile.name, profile.getJoinAddress(), ServerData.Type.OTHER);
+                    ConnectScreen.startConnecting(this, minecraft, address, data, false, null);
+                })
+                .bounds(centerX + 5, centerY + 50, 100, 20).build();
         joinButton.visible = state == State.SUCCESS;
         joinButton.active = state == State.SUCCESS;
-        this.addRenderableWidget(joinButton);\n\n        cancelButton = Button.builder(Component.translatable("netflared.status.cancel"), btn -> {\n            if (state == State.WORKING || state == State.SUCCESS) {\n                NetflaredMod.getTunnelManager().stopTunnel(profile.domain);\n                profile.running = false;\n            }\n            minecraft.gui.setScreen(parent);\n        }).bounds(centerX - 50, centerY + 75, 100, 20).build();\n        cancelButton.visible = state == State.WORKING || state == State.SUCCESS;\n        this.addRenderableWidget(cancelButton);\n\n        cancelButton = Button.builder(Component.translatable("netflared.status.cancel"), btn -> {\n            if (state == State.WORKING || state == State.SUCCESS) {\n                NetflaredMod.getTunnelManager().stopTunnel(profile.domain);\n                profile.running = false;\n            }\n            minecraft.gui.setScreen(parent);\n        }).bounds(centerX - 50, centerY + 75, 100, 20).build();\n        cancelButton.visible = state == State.WORKING || state == State.SUCCESS;\n        this.addRenderableWidget(cancelButton);
+        addRenderableWidget(joinButton);
+
+        cancelButton = Button.builder(
+                Component.translatable("netflared.status.cancel"),
+                btn -> {
+                    if (state == State.WORKING || state == State.SUCCESS) {
+                        NetflaredMod.getTunnelManager().stopTunnel(profile.domain);
+                        profile.running = false;
+                    }
+                    minecraft.gui.setScreen(parent);
+                })
+                .bounds(centerX - 50, centerY + 75, 100, 20).build();
+        cancelButton.visible = state == State.WORKING || state == State.SUCCESS;
+        addRenderableWidget(cancelButton);
     }
 
     @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
         super.extractRenderState(graphics, mouseX, mouseY, delta);
 
-        int centerX = this.width / 2;
-        int centerY = this.height / 2;
-
+        int centerX = width / 2;
+        int centerY = height / 2;
         String title = switch (state) {
             case WORKING -> "Setting up tunnel...";
             case SUCCESS -> "Successfully connected";
-            case ERROR   -> "Tunnel setup failed";
-        };
-        int titleColor = switch (state) {
-            case WORKING -> 0xFFFFFFFF;
-            case SUCCESS -> 0xFF55FF55;
-            case ERROR   -> 0xFFFF5555;
+            case ERROR -> "Tunnel setup failed";
         };
 
-        drawCentered(graphics, title, centerX, centerY - 30, titleColor);
-        drawCentered(graphics, message, centerX, centerY - 10, 0xFFCCCCCC);
+        drawCentered(graphics, title, centerX, centerY - 30);
+        drawCentered(graphics, message, centerX, centerY - 10);
 
         if (state == State.SUCCESS) {
-            drawCentered(graphics,
-                    "Add server: " + profile.getJoinAddress(),
-                    centerX, centerY + 10, 0xFFFFFF55);
-            drawCentered(graphics,
-                    "Domain: " + profile.domain,
-                    centerX, centerY + 25, 0xFFA0A0A0);
+            drawCentered(graphics, "Local: " + profile.getJoinAddress(), centerX, centerY + 10);
+            drawCentered(graphics, "Domain: " + profile.domain, centerX, centerY + 25);
         }
     }
 
-    private void drawCentered(GuiGraphicsExtractor graphics, String text, int centerX, int y, int color) {
-        int w = this.font.width(text);
-        graphics.text(this.font, text, centerX - w / 2, y, color, true);
+    private void drawCentered(GuiGraphicsExtractor graphics, String text, int centerX, int y) {
+        int x = centerX - font.width(text) / 2;
+        graphics.text(font, text, x, y, 0xFFFFFFFF, true);
     }
 
     @Override
     public void onClose() {
-        this.minecraft.gui.setScreen(parent);
+        minecraft.gui.setScreen(parent);
     }
 }

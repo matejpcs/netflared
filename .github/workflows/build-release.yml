@@ -35,9 +35,13 @@ jobs:
           gradle-version: '9.5.0'
           cache-provider: basic
 
-      - name: Build main
+      - name: Generate Gradle 9.5.0 wrapper for main
         working-directory: main
-        run: gradle clean build --no-daemon
+        run: gradle wrapper --gradle-version 9.5.0
+
+      - name: Build main with Gradle wrapper
+        working-directory: main
+        run: ./gradlew clean build --no-daemon
 
       - name: Set up Java 21 for neo-1.21.1
         uses: actions/setup-java@v5
@@ -70,7 +74,7 @@ jobs:
             --title "Netflared build $TAG" \
             --notes "Automated build of both branches.
 
-          - main: built with Java 25 and Gradle 9.5.0
+          - main: built with Java 25 and Gradle 9.5.0 wrapper
           - neo-1.21.1: built with Java 21 and the current stable Gradle
 
           Main commit: $(git -C main rev-parse HEAD)

@@ -47,12 +47,7 @@ jobs:
         uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: '21'
-
-      - name: Set up current Gradle for neo-1.21.1
-        uses: gradle/actions/setup-gradle@v6
-        with:
-          gradle-version: current
+          gradle-version: '9.2.1'
           cache-provider: basic
 
       - name: Build neo-1.21.1
@@ -75,7 +70,7 @@ jobs:
             --notes "Automated build of both branches.
 
           - main: built with Java 25 and Gradle 9.5.0 wrapper
-          - neo-1.21.1: built with Java 21 and the current stable Gradle
+          - neo-1.21.1: built with Java 21 and Gradle 9.2.1
 
           Main commit: $(git -C main rev-parse HEAD)
           NeoForge 1.21.1 commit: $(git -C neo-1.21.1 rev-parse HEAD)"

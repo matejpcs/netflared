@@ -6,8 +6,8 @@ import com.netflared.config.NetflaredConfig;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
 import java.net.URI;
-import java.net.URLConnection;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
@@ -17,22 +17,10 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Manages the cloudflared binary download and all active tunnel processes.
- *
- * <p>Binary location: {@code .minecraft/config/netflared/bin/}.
- * PID tracking location: {@code .minecraft/config/netflared/tunnels/}.
- * Each tunnel runs
- * {@code cloudflared access tcp --hostname <domain> --url localhost:<port>}.</p>
- *
- * <p>Tunnels are never started at mod init — only when the player
- * explicitly clicks "Connect" in the GUI.</p>
- */
+/** Manages the cloudflared binary and active tunnel processes. */
 public class TunnelManager {
-
     private static final String CLOUDFLARED_RELEASE_BASE =
             "https://github.com/cloudflare/cloudflared/releases/latest/download/";
 
@@ -45,70 +33,101 @@ public class TunnelManager {
         this.pidDir = configDir.resolve("tunnels");
     }
 
-    // ------------------------------------------------------------------
-    // Binary management
-    // ------------------------------------------------------------------
-
-    /** Returns the path where the cloudflared binary lives for this platform. */
     public Path binaryPath() {
         return binDir.resolve(Platform.detect().binaryFileName());
     }
 
     public boolean isBinaryReady() {
-        Path b = binaryPath();
-        return Files.exists(b) && b.toFile().length() > 0;
+        try {
+            Path b = binaryPath();
+            return Files.isRegularFile(b) && Files.size(b) > 0;
+        } catch (IOException e) {
+            return false;
+        }
     }
 
     /**
-     * Downloads cloudflared if not already present. Blocking — call from a
-     * background thread.
+     * Downloads cloudflared atomically. A partially downloaded executable is
+     * never exposed as the live binary.
      */
-    public Path ensureBinary() throws IOException, InterruptedException {
-        Files.createDirectories(binDir);
+    public synchronized Path ensureBinary() throws IOException, InterruptedException {
         Platform platform = Platform.detect();
-        Path binary = binDir.resolve(platform.binaryFileName());
+        Files.createDirectories(binDir);
 
-        if (Files.exists(binary) && Files.size(binary) > 0) {
+        Path binary = binDir.resolve(platform.binaryFileName());
+        if (Files.isRegularFile(binary) && Files.size(binary) > 0) {
             makeExecutable(binary);
             return binary;
         }
 
+        Path temporary = binDir.resolve(platform.assetName() + ".part");
+        Files.deleteIfExists(temporary);
+
         NetflaredMod.LOGGER.info("[Netflared] Downloading cloudflared ({}) ...", platform.assetName());
-        Path downloadTarget = binDir.resolve(platform.assetName());
-        downloadFile(CLOUDFLARED_RELEASE_BASE + platform.assetName(), downloadTarget);
+        try {
+            downloadFile(CLOUDFLARED_RELEASE_BASE + platform.assetName(), temporary);
 
-        if (platform.needsExtraction()) {
-            extractTarGz(downloadTarget, binDir);
-            Files.deleteIfExists(downloadTarget);
-        } else if (!downloadTarget.equals(binary)) {
-            Files.move(downloadTarget, binary, StandardCopyOption.REPLACE_EXISTING);
+            if (platform.needsExtraction()) {
+                extractTarGz(temporary, binDir);
+                Files.deleteIfExists(temporary);
+            } else {
+                try {
+                    Files.move(temporary, binary, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+                } catch (java.nio.file.AtomicMoveNotSupportedException e) {
+                    Files.move(temporary, binary, StandardCopyOption.REPLACE_EXISTING);
+                }
+            }
+
+            if (!Files.isRegularFile(binary) || Files.size(binary) == 0) {
+                throw new IOException("cloudflared download did not produce a valid binary");
+            }
+
+            makeExecutable(binary);
+            NetflaredMod.LOGGER.info("[Netflared] cloudflared ready at {}", binary);
+            return binary;
+        } catch (IOException | InterruptedException e) {
+            Files.deleteIfExists(temporary);
+            throw e;
         }
-
-        makeExecutable(binary);
-        NetflaredMod.LOGGER.info("[Netflared] cloudflared ready at {}", binary);
-        return binary;
     }
 
     private void downloadFile(String url, Path target) throws IOException {
-        URLConnection connection = URI.create(url).toURL().openConnection();
-        connection.setRequestProperty("User-Agent", "netflared-mod");
+        HttpURLConnection connection = (HttpURLConnection) URI.create(url).toURL().openConnection();
+        connection.setRequestProperty("User-Agent", "Netflared/" + NetflaredMod.MOD_ID);
         connection.setConnectTimeout(15_000);
         connection.setReadTimeout(60_000);
+        connection.setInstanceFollowRedirects(true);
 
-        try (ReadableByteChannel in = Channels.newChannel(connection.getInputStream());
-             var out = Files.newByteChannel(target,
-                     Set.of(StandardOpenOption.CREATE, StandardOpenOption.WRITE,
-                             StandardOpenOption.TRUNCATE_EXISTING))) {
-            ByteBuffer buffer = ByteBuffer.allocateDirect(1 << 16);
-            while (in.read(buffer) != -1) {
-                buffer.flip();
-                out.write(buffer);
-                buffer.clear();
+        try {
+            int status = connection.getResponseCode();
+            if (status < 200 || status >= 300) {
+                throw new IOException("Cloudflare download failed with HTTP " + status);
             }
+
+            long expected = connection.getContentLengthLong();
+            try (ReadableByteChannel in = Channels.newChannel(connection.getInputStream());
+                 var out = Files.newByteChannel(target,
+                         StandardOpenOption.CREATE,
+                         StandardOpenOption.WRITE,
+                         StandardOpenOption.TRUNCATE_EXISTING)) {
+                ByteBuffer buffer = ByteBuffer.allocateDirect(1 << 16);
+                long downloaded = 0;
+                while (in.read(buffer) != -1) {
+                    buffer.flip();
+                    while (buffer.hasRemaining()) {
+                        downloaded += out.write(buffer);
+                    }
+                    buffer.clear();
+                }
+                if (expected >= 0 && downloaded != expected) {
+                    throw new IOException("Incomplete cloudflared download (" + downloaded + "/" + expected + " bytes)");
+                }
+            }
+        } finally {
+            connection.disconnect();
         }
     }
 
-    /** macOS releases ship as .tgz; shells out to system tar. */
     private void extractTarGz(Path archive, Path destDir) throws IOException, InterruptedException {
         Process p = new ProcessBuilder("tar", "-xzf", archive.toString(), "-C", destDir.toString())
                 .redirectErrorStream(true).start();
@@ -130,32 +149,18 @@ public class TunnelManager {
             perms.add(java.nio.file.attribute.PosixFilePermission.OTHERS_READ);
             perms.add(java.nio.file.attribute.PosixFilePermission.OTHERS_EXECUTE);
             Files.setPosixFilePermissions(path, perms);
-        } catch (UnsupportedOperationException e) {
-            // Windows — no POSIX permissions.
+        } catch (UnsupportedOperationException ignored) {
         } catch (IOException e) {
             NetflaredMod.LOGGER.warn("[Netflared] Could not set executable bit on {}", path, e);
         }
     }
 
-    // ------------------------------------------------------------------
-    // Orphan cleanup — call once at mod init
-    // ------------------------------------------------------------------
-
-    /**
-     * Scans the PID directory for leftovers from previous runs and kills
-     * any cloudflared process that's still alive.
-     *
-     * <p>Only processes whose executable path or command line contains
-     * "cloudflared" are killed. Anything else (e.g. a recycled PID now
-     * belonging to an unrelated program) is left alone and the stale PID
-     * file is simply removed.</p>
-     */
     public void killOrphanedTunnels() {
         try {
             if (!Files.exists(pidDir)) return;
             try (var stream = Files.list(pidDir)) {
                 stream.filter(p -> p.toString().endsWith(".pid"))
-                      .forEach(this::killOrphanByPidFile);
+                        .forEach(this::killOrphanByPidFile);
             }
         } catch (IOException e) {
             NetflaredMod.LOGGER.warn("[Netflared] Could not scan PID directory for orphans", e);
@@ -163,125 +168,120 @@ public class TunnelManager {
     }
 
     private void killOrphanByPidFile(Path pidFile) {
+        boolean safeToDelete = false;
         try {
-            String content = Files.readString(pidFile).trim();
-            long pid = Long.parseLong(content);
+            long pid = Long.parseLong(Files.readString(pidFile).trim());
+            var process = ProcessHandle.of(pid);
+            if (process.isEmpty() || !process.get().isAlive()) {
+                safeToDelete = true;
+                return;
+            }
 
-            ProcessHandle.of(pid).ifPresent(ph -> {
-                if (!ph.isAlive()) {
-                    return; // already gone
-                }
-                if (!isCloudflared(ph)) {
-                    NetflaredMod.LOGGER.warn(
-                            "[Netflared] PID {} from {} is not cloudflared (it's '{}'); refusing to kill it.",
-                            pid, pidFile.getFileName(),
-                            ph.info().command().orElse("<unknown>"));
-                    return;
-                }
-                NetflaredMod.LOGGER.info(
-                        "[Netflared] Killing orphaned cloudflared process PID {} (from {})",
+            ProcessHandle handle = process.get();
+            if (!isCloudflared(handle)) {
+                NetflaredMod.LOGGER.warn(
+                        "[Netflared] Refusing to kill PID {} from {} because it is not cloudflared.",
                         pid, pidFile.getFileName());
-                killTree(ph);
-            });
+                return;
+            }
+
+            killTree(handle);
+            safeToDelete = true;
         } catch (Exception e) {
-            NetflaredMod.LOGGER.debug("[Netflared] Could not read PID file {}", pidFile, e);
+            NetflaredMod.LOGGER.debug("[Netflared] Could not inspect PID file {}", pidFile, e);
         } finally {
-            try { Files.deleteIfExists(pidFile); } catch (IOException ignored) {}
+            if (safeToDelete) {
+                try {
+                    Files.deleteIfExists(pidFile);
+                } catch (IOException ignored) {
+                }
+            }
         }
     }
 
-    /**
-     * Returns true if the process appears to be cloudflared. Checks both
-     * the executable path and the full command line (since on some
-     * platforms cloudflared is launched via a shim or shell wrapper).
-     *
-     * <p>Case-insensitive; matches both "cloudflared" and
-     * "cloudflared.exe".</p>
-     */
     private boolean isCloudflared(ProcessHandle handle) {
         try {
             var info = handle.info();
-
-            var cmdOpt = info.command();
-            if (cmdOpt.isPresent()) {
-                String cmd = cmdOpt.get().toLowerCase(Locale.ROOT);
-                if (cmd.contains("cloudflared")) return true;
-            }
-
-            var argsOpt = info.commandLine();
-            if (argsOpt.isPresent()) {
-                String line = argsOpt.get().toLowerCase(Locale.ROOT);
-                if (line.contains("cloudflared")) return true;
-            }
+            String command = info.command().orElse("").toLowerCase(Locale.ROOT);
+            String commandLine = info.commandLine().orElse("").toLowerCase(Locale.ROOT);
+            return command.contains("cloudflared") || commandLine.contains("cloudflared");
         } catch (Throwable ignored) {
-            // Can't inspect — be conservative and don't kill.
+            return false;
         }
-        return false;
     }
 
-    // ------------------------------------------------------------------
-    // Tunnel lifecycle
-    // ------------------------------------------------------------------
-
-    /**
-     * Starts a tunnel for the given profile. The profile's {@code running}
-     * flag is set to true on success.
-     */
     public synchronized Process startTunnel(NetflaredConfig.Profile profile)
             throws IOException, InterruptedException {
-
-        if (profile.domain == null || profile.domain.isBlank()) {
-            throw new IllegalArgumentException("Profile domain is empty");
-        }
+        validateProfile(profile);
 
         Process existing = activeTunnels.get(profile.domain);
-        if (existing != null && existing.isAlive()) {
-            return existing;
+        if (existing != null) {
+            if (existing.isAlive()) return existing;
+            activeTunnels.remove(profile.domain, existing);
+            profile.running = false;
         }
 
-        // Defensive: clean up anything still holding the PID file for this
-        // domain (e.g. a leftover cloudflared from a crashed session).
         killOrphanByPidFile(pidFileFor(profile.domain));
 
         Path binary = ensureBinary();
-        String localUrl = "localhost:" + profile.port;
-
-        NetflaredMod.LOGGER.info("[Netflared] Starting tunnel: {} access tcp --hostname {} --url {}",
-                binary, profile.domain, localUrl);
-
         ProcessBuilder pb = new ProcessBuilder(
                 binary.toAbsolutePath().toString(),
                 "access", "tcp",
                 "--hostname", profile.domain,
-                "--url", localUrl
-        );
+                "--url", "localhost:" + profile.port);
         pb.redirectErrorStream(true);
+
         Process process = pb.start();
         activeTunnels.put(profile.domain, process);
         profile.running = true;
-
         writePidFile(profile.domain, process.pid());
         logProcessOutput(process, "cloudflared-" + profile.domain);
+
+        Thread watcher = new Thread(() -> {
+            try {
+                int exitCode = process.waitFor();
+                activeTunnels.remove(profile.domain, process);
+                profile.running = false;
+                NetflaredMod.LOGGER.info(
+                        "[Netflared] cloudflared for {} exited with code {}",
+                        profile.domain, exitCode);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            } finally {
+                try {
+                    Files.deleteIfExists(pidFileFor(profile.domain));
+                } catch (IOException ignored) {
+                }
+            }
+        }, "netflared-tunnel-watcher");
+        watcher.setDaemon(true);
+        watcher.start();
+
         return process;
     }
 
-    /**
-     * Graceful stop for the "Disconnect" button. Kills the process tree
-     * and removes the PID file.
-     */
+    private void validateProfile(NetflaredConfig.Profile profile) {
+        if (profile == null) throw new IllegalArgumentException("Profile is missing");
+        String domain = profile.domain == null ? "" : profile.domain.trim();
+        if (domain.isEmpty()) throw new IllegalArgumentException("Tunnel domain is empty");
+        if (domain.length() > 253) throw new IllegalArgumentException("Tunnel domain is too long");
+        if (!domain.matches("(?i)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z]{2,63}")) {
+            throw new IllegalArgumentException("Invalid tunnel domain: " + domain);
+        }
+        if (profile.port < 1 || profile.port > 65535) {
+            throw new IllegalArgumentException("Local port must be between 1 and 65535");
+        }
+        profile.domain = domain;
+    }
+
     public synchronized void stopTunnel(String domain) {
         Process process = activeTunnels.remove(domain);
         if (process != null && process.isAlive()) {
-            NetflaredMod.LOGGER.info("[Netflared] Stopping tunnel for {}", domain);
             killTree(process.toHandle());
         }
         try { Files.deleteIfExists(pidFileFor(domain)); } catch (IOException ignored) {}
     }
 
-    /**
-     * Fast, non-blocking shutdown used during JVM exit. Kills every tunnel
-     * process tree and clears PID files. Does not wait for anything.
-     */
     public synchronized void forceStopAll() {
         for (Map.Entry<String, Process> entry : activeTunnels.entrySet()) {
             Process p = entry.getValue();
@@ -289,6 +289,7 @@ public class TunnelManager {
                 try { killTree(p.toHandle()); } catch (Throwable ignored) {}
             }
             try { Files.deleteIfExists(pidFileFor(entry.getKey())); } catch (IOException ignored) {}
+
         }
         activeTunnels.clear();
     }
@@ -298,18 +299,6 @@ public class TunnelManager {
         return p != null && p.isAlive();
     }
 
-    // ------------------------------------------------------------------
-    // Internal helpers
-    // ------------------------------------------------------------------
-
-    /**
-     * Kills a process and all of its descendants. On Windows this is
-     * required because {@code destroyForcibly()} only kills the direct
-     * child, leaving grandchildren orphaned and holding ports.
-     *
-     * <p>Descendants are killed first, then the root — otherwise children
-     * can be reparented to init and survive.</p>
-     */
     private void killTree(ProcessHandle handle) {
         try {
             handle.descendants().forEach(child -> {
@@ -320,16 +309,15 @@ public class TunnelManager {
     }
 
     private Path pidFileFor(String domain) {
-        String safe = domain == null ? "default"
-                : domain.replaceAll("[^a-zA-Z0-9._-]", "_");
-        if (safe.isEmpty()) safe = "default";
-        return pidDir.resolve(safe + ".pid");
+        String safe = domain == null ? "default" : domain.replaceAll("[^a-zA-Z0-9._-]", "_");
+        return pidDir.resolve(safe.isEmpty() ? "default.pid" : safe + ".pid");
     }
 
     private void writePidFile(String domain, long pid) {
         try {
             Files.createDirectories(pidDir);
-            Files.writeString(pidFileFor(domain), Long.toString(pid));
+            Files.writeString(pidFileFor(domain), Long.toString(pid),
+                    StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
         } catch (IOException e) {
             NetflaredMod.LOGGER.warn("[Netflared] Could not write PID file for {}", domain, e);
         }
@@ -343,7 +331,6 @@ public class TunnelManager {
                     NetflaredMod.LOGGER.info("[{}] {}", tag, line);
                 }
             } catch (IOException ignored) {
-                // stream closed because the process ended
             }
         }, tag + "-output-reader");
         reader.setDaemon(true);

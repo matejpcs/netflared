@@ -2,15 +2,8 @@ package com.netflared.tunnel;
 
 import java.util.Locale;
 
-/**
- * OS/arch detection and cloudflared asset-name resolution.
- *
- * <p>Asset names match Cloudflare's GitHub release naming convention
- * (latest release at
- * {@code https://github.com/cloudflare/cloudflared/releases/latest/download/}).</p>
- */
+/** OS/architecture detection for cloudflared release assets. */
 public enum Platform {
-
     WINDOWS_AMD64("cloudflared-windows-amd64.exe", "cloudflared.exe", false),
     LINUX_AMD64("cloudflared-linux-amd64", "cloudflared", false),
     LINUX_ARM64("cloudflared-linux-arm64", "cloudflared", false),
@@ -31,21 +24,27 @@ public enum Platform {
     public String binaryFileName() { return binaryFileName; }
     public boolean needsExtraction() { return needsExtraction; }
 
-    /**
-     * Detects the current platform. Falls back to Linux AMD64 for unknown
-     * operating systems, which is the safest default for headless servers.
-     */
     public static Platform detect() {
         String os = System.getProperty("os.name", "").toLowerCase(Locale.ROOT);
         String arch = System.getProperty("os.arch", "").toLowerCase(Locale.ROOT);
-        boolean isArm = arch.contains("aarch64") || arch.contains("arm");
+        boolean arm64 = arch.equals("aarch64") || arch.equals("arm64");
+        boolean amd64 = arch.equals("amd64") || arch.equals("x86_64") || arch.equals("x86-64");
 
-        if (os.contains("win")) {
-            return WINDOWS_AMD64;
-        } else if (os.contains("mac") || os.contains("darwin")) {
-            return isArm ? MAC_ARM64 : MAC_AMD64;
-        } else {
-            return isArm ? LINUX_ARM64 : LINUX_AMD64;
+        if (!amd64 && !arm64) {
+            throw new UnsupportedOperationException("Unsupported CPU architecture: " + arch);
         }
+        if (os.contains("win")) {
+            if (!amd64) {
+                throw new UnsupportedOperationException("Windows ARM64 cloudflared is not supported by this release");
+            }
+            return WINDOWS_AMD64;
+        }
+        if (os.contains("mac") || os.contains("darwin")) {
+            return arm64 ? MAC_ARM64 : MAC_AMD64;
+        }
+        if (os.contains("linux")) {
+            return arm64 ? LINUX_ARM64 : LINUX_AMD64;
+        }
+        throw new UnsupportedOperationException("Unsupported operating system: " + os);
     }
 }

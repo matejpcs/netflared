@@ -1,0 +1,77 @@
+name: Build and Release Both Versions
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: main
+
+      - name: Checkout neo-1.21.1
+        uses: actions/checkout@v4
+        with:
+          ref: neo-1.21.1
+          path: neo-1.21.1
+
+      - name: Set up Java 25 for main
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Set up Gradle 9.1.0 for main
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          gradle-version: '9.1.0'
+          cache-provider: basic
+
+      - name: Build main
+        working-directory: main
+        run: gradle clean build --no-daemon
+
+      - name: Set up Java 21 for neo-1.21.1
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up current Gradle for neo-1.21.1
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          gradle-version: current
+          cache-provider: basic
+
+      - name: Build neo-1.21.1
+        working-directory: neo-1.21.1
+        run: gradle clean build --no-daemon
+
+      - name: Prepare release artifacts
+        run: |
+          mkdir -p release
+          cp main/build/libs/*.jar release/
+          cp neo-1.21.1/build/libs/*.jar release/
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="v${{ github.run_number }}"
+          gh release create "$TAG" release/*.jar \
+            --title "Netflared build $TAG" \
+            --notes "Automated build of both branches.
+
+          - main: built with Java 25 and Gradle 9.1.0
+          - neo-1.21.1: built with Java 21 and the current stable Gradle
+
+          Main commit: $(git -C main rev-parse HEAD)
+          NeoForge 1.21.1 commit: $(git -C neo-1.21.1 rev-parse HEAD)"

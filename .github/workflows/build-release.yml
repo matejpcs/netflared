@@ -29,10 +29,10 @@ jobs:
           distribution: temurin
           java-version: '25'
 
-      - name: Set up Gradle 9.1.0 for main
+      - name: Set up Gradle 9.1.5 for main
         uses: gradle/actions/setup-gradle@v6
         with:
-          gradle-version: '9.1.0'
+          gradle-version: '9.1.5'
           cache-provider: basic
 
       - name: Build main
@@ -70,7 +70,7 @@ jobs:
             --title "Netflared build $TAG" \
             --notes "Automated build of both branches.
 
-          - main: built with Java 25 and Gradle 9.1.0
+          - main: built with Java 25 and Gradle 9.1.5
           - neo-1.21.1: built with Java 21 and the current stable Gradle
 
           Main commit: $(git -C main rev-parse HEAD)

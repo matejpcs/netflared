@@ -94,9 +94,12 @@ jobs:
 
       - name: Prepare release artifacts
         run: |
+          set -e
           mkdir -p release
-          cp main/build/libs/*.jar release/
-          cp neo-1.21.1/build/libs/*.jar release/
+          find main/build/libs neo-1.21.1/build/libs -type f -name '*.jar' ! -name '*-sources.jar' -exec cp {} release/ \;
+
+          echo "=== Release artifacts ==="
+          find release -maxdepth 1 -type f -name '*.jar' -print
 
       - name: Create GitHub release
         env:

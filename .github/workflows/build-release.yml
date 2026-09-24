@@ -57,7 +57,7 @@ jobs:
 
       - name: Build neo-1.21.1
         working-directory: neo-1.21.1
-        run: gradle clean build --no-daemon
+        run: gradle clean build --no-daemon --refresh-dependencies
 
       - name: Prepare release artifacts
         run: |

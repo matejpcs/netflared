@@ -70,7 +70,7 @@ jobs:
         run: |
           set -e
           echo "=== NeoForge 21.1.235 artifacts ==="
-          find "${GRADLE_USER_HOME}/caches/modules-2/files-2.1/net.neoforged/neoforge/21.1.235"             -type f -name '*.jar' -print
+          find "${GRADLE_USER_HOME}/caches/modules-2/files-2.1/net.neoforged/neoforge/21.1.235" -type f -name '*.jar' -print
 
           echo "=== userdev artifact access transformer ==="
           userdev_found=false
@@ -79,7 +79,7 @@ jobs:
             echo "--- ${jar}"
             unzip -l "${jar}" | grep -E 'ats/accesstransformer.cfg|config.json' || true
             unzip -t "${jar}" >/dev/null
-          done < <(find "${GRADLE_USER_HOME}/caches/modules-2/files-2.1/net.neoforged/neoforge/21.1.235"             -type f -name '*-userdev.jar')
+          done < <(find "${GRADLE_USER_HOME}/caches/modules-2/files-2.1/net.neoforged/neoforge/21.1.235" -type f -name '*-userdev.jar')
 
           if [ "${userdev_found}" = false ]; then
             echo "ERROR: NeoForge 21.1.235 userdev jar was not resolved."
@@ -103,7 +103,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG="v${{ github.run_number }}"
-          gh release create "$TAG" release/*.jar             --title "Netflared build $TAG"             --notes "Automated build of both branches.
+          gh release create "$TAG" release/*.jar             --repo matejpcs/netflared             --title "Netflared build $TAG"             --notes "Automated build of both branches.
 
           - main: built with Java 25 and Gradle 9.5.0 wrapper
           - neo-1.21.1: built with Java 21 and Gradle 9.2.1
